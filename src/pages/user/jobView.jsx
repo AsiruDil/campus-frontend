@@ -75,7 +75,7 @@ const JobCard = ({ job }) => {
 
       <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between">
         <p className="text-xs text-gray-400 font-medium">Posted {formatDate(job.postDate)}</p>
-        <Link to='/jobDetails' className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 group/link">
+        <Link to={`/jobDetails/${job._id || job.jobId}`}className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 group/link">
           Details 
           <span className="group-hover/link:translate-x-1 transition-transform">
             <FiChevronRight />
