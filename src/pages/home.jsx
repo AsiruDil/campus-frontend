@@ -11,10 +11,7 @@ export default function HomePage(){
     const [isModalOpen,setIsModalOpen]=useState(false)
     const [isLogin, setIsLogin] = useState(true)
 
-     const openLoginModal = () => {
-        setIsLogin(true)
-        setIsModalOpen(true)
-    }
+
       const openRegisterModal = () => {
     setIsLogin(false)
     setIsModalOpen(true)

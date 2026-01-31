@@ -201,6 +201,7 @@ export default function Header({
         toast.success("Login successful")
        
         localStorage.setItem("token",res.data.token)
+      
         if(res.data.type=="admin"){
           navigate("/admin")
         }else if (res.data.type=="madam"){
