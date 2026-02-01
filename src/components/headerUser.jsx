@@ -1,8 +1,8 @@
 import { Link, useNavigate } from "react-router-dom"
-import { useEffect, useState, useRef } from "react" // Added useRef
+import { useEffect, useState, useRef } from "react" 
 import Modal from "react-modal"
 import { IoMdNotificationsOutline } from "react-icons/io"
-import { FiMenu, FiLogOut, FiSave, FiX, FiCamera } from "react-icons/fi" // Added FiX and FiCamera
+import { FiMenu, FiLogOut, FiSave, FiX, FiCamera } from "react-icons/fi" 
 import { createClient } from "@supabase/supabase-js"
 import axios from "axios"
 import toast from "react-hot-toast"
@@ -13,21 +13,18 @@ Modal.setAppElement("#root")
 export default function HeaderUser() {
   const navigate = useNavigate()
 
-
-  
   const [isOpen, setIsOpen] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
-
-
 
   // Reference for the hidden file input
   const fileInputRef = useRef(null)
 
   // State to hold profile image
   const [profileImage, setProfileImage] = useState("profile.png")
-  const [selectedFile, setSelectedFile] = useState(null) // To store the actual file for backend
+  const [selectedFile, setSelectedFile] = useState(null) 
   const [previewImage, setPreviewImage] = useState(null)
-const [isLoading,setIsloading]=useState(true)
+  const [isLoading,setIsloading]=useState(true)
+  
   // State to hold user data
   const [userData, setUserData] = useState({
     name: "",
@@ -40,17 +37,11 @@ const [isLoading,setIsloading]=useState(true)
   
 
   // Simulate fetching Name and Email from Token on mount
-
-    const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
+  
   useEffect(() => {
   const fetchUserData = async () => {
-   
- 
-  
-
     // If no token, we can't fetch. Just stop loading.
-   
-
     try {
       if (!token) {
       setIsloading(false);
@@ -72,8 +63,7 @@ const [isLoading,setIsloading]=useState(true)
       if (response.data) {
         const user = response.data;
         setUserData({
-          
-          name: user.name ,
+          name: user.userName ,
           email: user.email,
           idNumber: user.id , 
           age: user.age ,
@@ -95,8 +85,6 @@ const [isLoading,setIsloading]=useState(true)
     finally {
       setIsloading(false); // Ensures loading stops regardless of success or failure
     }
-  
-     
   };
 
  fetchUserData();
@@ -285,10 +273,10 @@ const [isLoading,setIsloading]=useState(true)
 
   const handleLogout = () => {
     console.log("Logging out...")
-    navigate("/login")
+    navigate("/")
   }
 
- 
+  
 
 
   return (
@@ -358,7 +346,7 @@ const [isLoading,setIsloading]=useState(true)
                   value={userData.idNumber}
                   onChange={handleIdChange}
                   placeholder="Enter NIC (e.g., 123456789V)"
-                  className="w-[260px] text-center px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition "
+                  className="w-[260px] text-center px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition "
                 />
               </div>
 
@@ -366,7 +354,12 @@ const [isLoading,setIsloading]=useState(true)
                 {/* Birthday Read-only */}
                 <div className="w-[200px] text-center bg-gray-50 p-3 rounded-lg border border-gray-100">
                   <span className="block text-xs font-semibold text-gray-500 uppercase">BirthDay</span>
-                  <span className="text-lg font-medium text-gray-800">{userData.birthday || "-"}</span>
+                 <input
+                    type="date"
+                    value={userData.birthday}
+                    onChange={(e) => setUserData({ ...userData, birthday: e.target.value })}
+                    className="w-full bg-transparent text-center text-lg font-medium text-gray-800 outline-none focus:ring-0 cursor-pointer"
+                  />
                 </div>
               </div>
 
@@ -421,7 +414,7 @@ const [isLoading,setIsloading]=useState(true)
 
           {/* Logo Section */}
           <div
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/home/")}
             className="flex items-center gap-2 cursor-pointer 
                         absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 
                         md:static md:translate-x-0 md:translate-y-0 md:order-1"
@@ -437,15 +430,15 @@ const [isLoading,setIsloading]=useState(true)
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex gap-6 font-medium absolute left-1/2 transform -translate-x-1/2">
-            <Link className="hover:text-accent transition">Home</Link>
-            <Link to="/about" className="hover:text-accent transition">About Us</Link>
-            <Link to="/contact" className="hover:text-accent transition">Contact Us</Link>
-            <Link className="text-green-500 hover:text-green-600">My applications</Link>
+            <Link to="/home" className="hover:text-accent transition">Home</Link>
+            <Link to="/home/about" className="hover:text-accent transition">About Us</Link>
+            <Link to="/home/contact" className="hover:text-accent transition">Contact Us</Link>
+            <Link to="/home/contact" className="text-green-500 hover:text-green-600">My applications</Link>
           </nav>
 
 
           {/* User Controls (Right) */}
-          <div className="flex items-center gap-4 md:gap-10 md:order-3 order-3">
+          <div className="flex items-center gap-2 md:gap-4 md:order-3 order-3">
             <button className="text-2xl cursor-pointer hover:text-accent transition">
               <IoMdNotificationsOutline />
             </button>
@@ -461,6 +454,24 @@ const [isLoading,setIsloading]=useState(true)
                 alt="Profile"
               />
             </div>
+
+            {/* --- NEW: Creative Welcome & Name (Right of Profile Icon) --- */}
+            {/* Added 'hidden' class so it only shows on md (medium) screens and up */}
+            <div 
+              onClick={() => setIsModalOpen(true)} 
+              className="hidden md:flex flex-col items-start justify-center cursor-pointer group"
+            >
+              <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-blue-500 transition-colors duration-300">
+                Welcome Back
+              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs md:text-sm font-black text-gray-800 group-hover:text-blue-600 transition-colors duration-300 max-w-[80px] md:max-w-[150px] truncate">
+                  {userData.name || "User"}
+                </span>
+                <span className="animate-pulse text-xs md:text-sm">👋</span>
+              </div>
+            </div>
+
           </div>
 
         </div>
@@ -487,10 +498,10 @@ const [isLoading,setIsloading]=useState(true)
         </div>
 
         <div className="flex flex-col gap-2 p-4">
-          <Link to="/" onClick={() => setIsDrawerOpen(false)} className="p-3 rounded-lg hover:bg-gray-100 text-center  hover:text-blue-500">Home</Link>
-          <Link to="/about" onClick={() => setIsDrawerOpen(false)} className="p-3 rounded-lg hover:bg-gray-100 text-center  hover:text-blue-500">About Us</Link>
-          <Link to="/contact" onClick={() => setIsDrawerOpen(false)} className="p-3 rounded-lg hover:bg-gray-100 text-center  hover:text-blue-500">Contact Us</Link>
-           <Link to="/contact" onClick={() => setIsDrawerOpen(false)} className="p-3 rounded-lg hover:bg-gray-100 hover:text-blue-500 text-center">My applications</Link>
+          <Link to="/home/" onClick={() => setIsDrawerOpen(false)} className="p-3 rounded-lg hover:bg-gray-100 text-center  hover:text-blue-500">Home</Link>
+          <Link to="/home/about" onClick={() => setIsDrawerOpen(false)} className="p-3 rounded-lg hover:bg-gray-100 text-center  hover:text-blue-500">About Us</Link>
+          <Link to="/home/contact" onClick={() => setIsDrawerOpen(false)} className="p-3 rounded-lg hover:bg-gray-100 text-center  hover:text-blue-500">Contact Us</Link>
+           <Link to="/home/contact" onClick={() => setIsDrawerOpen(false)} className="p-3 rounded-lg hover:bg-gray-100 hover:text-blue-500 text-center">My applications</Link>
 
           <div className="flex gap-2 mt-6">
             <button

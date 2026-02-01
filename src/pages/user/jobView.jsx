@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 // --- React Icons Imports ---
@@ -75,7 +75,7 @@ const JobCard = ({ job }) => {
 
       <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between">
         <p className="text-xs text-gray-400 font-medium">Posted {formatDate(job.postDate)}</p>
-        <Link to={`/jobDetails/${job._id || job.jobId}`}className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 group/link">
+        <Link to={`/home/jobDetails/${job.jobId}`} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 group/link">
           Details 
           <span className="group-hover/link:translate-x-1 transition-transform">
             <FiChevronRight />
@@ -142,15 +142,21 @@ export default function JobView() {
       
       const data = await response.json();
       
-      // Store raw data in allJobs
+      let jobsData = [];
+      // Handle different data structures
       if (Array.isArray(data)) {
-          setAllJobs(data);
+          jobsData = data;
       } else if (data.content) {
-          // Handle case if backend mistakenly sends paginated structure
-          setAllJobs(data.content);
-      } else {
-          setAllJobs([]);
+          jobsData = data.content;
       }
+
+      // --- SORTING ADDED HERE: LATEST UPDATED FIRST ---
+      // Sorts by postDate descending (newest to oldest)
+      const sortedJobs = jobsData.sort((a, b) => 
+        new Date(b.postDate) - new Date(a.postDate)
+      );
+
+      setAllJobs(sortedJobs);
 
     } catch (error) {
       console.error("Failed to fetch jobs:", error);
@@ -209,17 +215,16 @@ export default function JobView() {
     setSelectedTypes(prev => 
       prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
     );
-    setCurrentPage(0); // Reset to page 1 on filter change
+    setCurrentPage(0); 
   };
 
   const handleFacultyToggle = (faculty) => {
     setSelectedFaculties(prev => 
       prev.includes(faculty) ? prev.filter(f => f !== faculty) : [...prev, faculty]
     );
-    setCurrentPage(0); // Reset to page 1 on filter change
+    setCurrentPage(0); 
   };
 
-  // Logic is now instant, so applyFilters just ensures UI is ready
   const applyFilters = () => {
     setCurrentPage(0);
   };
@@ -235,7 +240,7 @@ export default function JobView() {
     <div className="min-h-screen bg-gray-50 text-gray-800 font-popins pb-20">
       
       {/* --- HERO / SEARCH SECTION --- */}
-      <div className="bg-white border-b border-gray-100 pb-10 pt-8 shadow-sm">
+      <div className="bg-white border-b border-gray-100 pb-10 pt-8 mt-18 shadow-sm">
         <div className=" flex justify-center flex-col items-center mx-auto px-6">
             <div className="max-w-4xl">
                 <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight">
@@ -270,7 +275,8 @@ export default function JobView() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4 items-start">
           
           {/* --- FILTER SIDEBAR (Left) --- */}
-          <aside className="col-span-1 hidden lg:block sticky top-8">
+          {/* FIXED POSITION: 'sticky' keeps it in view while scrolling, 'top-20' gives it spacing from top */}
+          <aside className="col-span-1 hidden lg:block sticky top-20">
             <div className="rounded-2xl border border-white bg-white p-6 shadow-xl shadow-gray-200/50">
               <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-2">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
