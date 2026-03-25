@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import HeaderMadam from './headerMadam';
+import { FiMail, FiX } from 'react-icons/fi'; 
 
 // ==========================================
 // 1. MAIN PAGE COMPONENT
@@ -14,6 +15,13 @@ export default function Madam() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 4;
+
+  // --- CHANGED: Use selectedRows instead of selectedEmails ---
+  const [selectedRows, setSelectedRows] = useState([]); 
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
   // --- FETCH DATA FROM BACKEND ---
   useEffect(() => {
@@ -30,17 +38,17 @@ export default function Madam() {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        // --- NEW SORTING LOGIC ADDED HERE ---
         // Sort by date descending (Latest first)
         const sortedData = response.data.sort((a, b) => {
           return new Date(b.date) - new Date(a.date);
         });
 
-        // Map Backend Data to Frontend Structure
-        const mappedUsers = sortedData.map(user => ({
+        // Map Backend Data
+        const mappedUsers = sortedData.map((user, index) => ({
+          id: user._id || `${user.email}-${index}`, // ✅ ADDED UNIQUE ID for independent selection
           name: user.userName || user.firstName, 
           email: user.email,
-          post: capitalizeFirstLetter(user.jobRole), // using jobRole
+          post: capitalizeFirstLetter(user.jobRole), 
           rawRole: user.jobRole, 
           date: new Date(user.date).toISOString().split('T')[0],
           cv: user.cv
@@ -76,8 +84,68 @@ export default function Madam() {
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
+  // --- CHANGED: Checkbox Logic (Works by Row ID now) ---
+  const handleSelectRow = (id) => {
+    if (selectedRows.includes(id)) {
+      setSelectedRows(selectedRows.filter(rowId => rowId !== id));
+    } else {
+      setSelectedRows([...selectedRows, id]);
+    }
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const pageIds = currentUsers.map(u => u.id);
+      const newSelections = [...new Set([...selectedRows, ...pageIds])];
+      setSelectedRows(newSelections);
+    } else {
+      const pageIds = currentUsers.map(u => u.id);
+      setSelectedRows(selectedRows.filter(id => !pageIds.includes(id)));
+    }
+  };
+
+  const isAllCurrentPageSelected = currentUsers.length > 0 && currentUsers.every(u => selectedRows.includes(u.id));
+
+  const handleSendEmail = async () => {
+    if (!emailSubject.trim() || !emailMessage.trim()) {
+      alert("Please enter both a subject and a message.");
+      return;
+    }
+    
+    // ✅ Extract unique emails from the specific rows you selected
+    const uniqueEmailsToSend = [...new Set(
+      applicants
+        .filter(app => selectedRows.includes(app.id))
+        .map(app => app.email)
+    )];
+
+    setIsSending(true);
+    try {
+      const token = localStorage.getItem('token');
+      // Backend API call to send emails
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/users/send-email`, {
+        emails: uniqueEmailsToSend, // Send the unique emails
+        subject: emailSubject,
+        message: emailMessage
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      alert("Emails sent successfully!");
+      setIsEmailModalOpen(false);
+      setSelectedRows([]); // Clear selections after success
+      setEmailSubject('');
+      setEmailMessage('');
+    } catch (error) {
+      console.error(error);
+      alert("Failed to send emails.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-[#f8fafc] relative">
         <HeaderMadam/>
 
       <main className="max-w-7xl mx-auto mt-20 p-8">
@@ -85,9 +153,20 @@ export default function Madam() {
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Applicant Overview</h1>
             <p className="text-gray-500 text-md">
-              {isLoading ? "Loading data..." : `Reviewing ${filteredUsers.length} applicants`}
+              {isLoading ? "Loading data..." : `Reviewing ${filteredUsers.length} applications`}
             </p>
           </div>
+          
+          {/* Send Email Button */}
+          {selectedRows.length > 0 && (
+            <button 
+              onClick={() => setIsEmailModalOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2"
+            >
+              <FiMail size={18} />
+              Send Email ({selectedRows.length})
+            </button>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -95,14 +174,20 @@ export default function Madam() {
           {/* Search Bar Component */}
           <SearchBar onSearch={(val) => {
              setSearchQuery(val);
-             setCurrentPage(1); // Reset to page 1 on search
+             setCurrentPage(1); 
           }} />
           
           {/* User Table Component */}
           {isLoading ? (
             <div className="p-10 text-center text-gray-500">Loading users from database...</div>
           ) : currentUsers.length > 0 ? (
-            <UserTable users={currentUsers} />
+            <UserTable 
+              users={currentUsers} 
+              selectedRows={selectedRows}
+              handleSelectRow={handleSelectRow}
+              handleSelectAll={handleSelectAll}
+              isAllSelected={isAllCurrentPageSelected}
+            />
           ) : (
             <div className="p-10 text-center text-gray-500">No applicants found.</div>
           )}
@@ -125,18 +210,80 @@ export default function Madam() {
           </div>
         </div>
       </main>
+
+      {/* Email Compose Modal */}
+      {isEmailModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex justify-center items-center font-popins">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 relative">
+            <button 
+              onClick={() => setIsEmailModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <FiX size={24} />
+            </button>
+            
+            <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+              <FiMail className="text-blue-600" /> Compose Email
+            </h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Sending to <span className="font-bold text-blue-600">{
+                [...new Set(applicants.filter(app => selectedRows.includes(app.id)).map(app => app.email))].length
+              }</span> applicant(s) based on your selection.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Subject</label>
+                <input 
+                  type="text" 
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  placeholder="e.g., Job Application Status..."
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Message</label>
+                <textarea 
+                  value={emailMessage}
+                  onChange={(e) => setEmailMessage(e.target.value)}
+                  placeholder="Type your message here. The applicants will receive this directly."
+                  rows="6"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none"
+                ></textarea>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button 
+                onClick={() => setIsEmailModalOpen(false)}
+                className="px-5 py-2.5 rounded-lg font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSendEmail}
+                disabled={isSending}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-70 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-bold shadow-md transition-colors flex items-center gap-2"
+              >
+                {isSending ? "Sending..." : "Send Email"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ==========================================
-// 2. SEARCH BAR COMPONENT (Formerly FilterBar)
+// 2. SEARCH BAR COMPONENT
 // ==========================================
 function SearchBar({ onSearch }) {
   return (
     <div className="p-6 bg-white border-b border-gray-50 relative">
       <div className="flex gap-4">
-        {/* Search Input Only */}
         <div className="relative flex-1">
           <span className="absolute left-4 top-3.5 text-gray-400">🔍</span>
           <input
@@ -154,7 +301,7 @@ function SearchBar({ onSearch }) {
 // ==========================================
 // 3. USER TABLE COMPONENT
 // ==========================================
-function UserTable({ users }) {
+function UserTable({ users, selectedRows, handleSelectRow, handleSelectAll, isAllSelected }) {
   return (
     <table className="w-full text-left">
       <thead className="bg-gray-50 border-b border-gray-100">
@@ -163,18 +310,23 @@ function UserTable({ users }) {
           <th className="p-4 text-xs font-bold text-gray-400 uppercase">Email</th>
           <th className="p-4 text-xs font-bold text-gray-400 uppercase">Requested Post</th>
           <th className="p-4 text-xs font-bold text-gray-400 uppercase text-center">Actions</th>
+          
+          <th className="p-4 text-xs font-bold text-gray-400 uppercase text-center">
+            <input 
+              type="checkbox" 
+              checked={isAllSelected}
+              onChange={handleSelectAll}
+              className="w-4 h-4 cursor-pointer accent-blue-600"
+            />
+          </th>
         </tr>
       </thead>
 
       <tbody className="divide-y divide-gray-50">
-        {users.map((user,index) => (
-          <tr key={index} className="hover:bg-blue-50/30">
-            <td className="p-4 font-medium">
-              {user.name} 
-            </td>
-            <td className="p-4 text-gray-500">
-              {user.email}
-            </td>
+        {users.map((user) => (
+          <tr key={user.id} className={`hover:bg-blue-50/30 ${selectedRows.includes(user.id) ? 'bg-blue-50/50' : ''}`}>
+            <td className="p-4 font-medium">{user.name}</td>
+            <td className="p-4 text-gray-500">{user.email}</td>
             <td className="p-4">
               <span className={`px-3 py-1 rounded-full text-[10px] font-bold 
                 ${user.post === 'Admin' ? 'bg-purple-100 text-purple-700' : 
@@ -196,6 +348,15 @@ function UserTable({ users }) {
               ) : (
                 <span className="text-gray-300 text-sm">No CV</span>
               )}
+            </td>
+            
+            <td className="p-4 text-center">
+              <input 
+                type="checkbox" 
+                checked={selectedRows.includes(user.id)}
+                onChange={() => handleSelectRow(user.id)}
+                className="w-4 h-4 cursor-pointer accent-blue-600"
+              />
             </td>
           </tr>
         ))}
