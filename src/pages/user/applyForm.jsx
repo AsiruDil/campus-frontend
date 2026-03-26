@@ -2,15 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiChevronLeft, FiUploadCloud, FiCheckCircle, FiSend, FiAlertCircle } from "react-icons/fi";
 import { BiLoaderAlt } from "react-icons/bi";
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from "../../util/supabase"
 import { jwtDecode } from "jwt-decode";
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 
 // Supabase Configuration
-const SUPABASE_URL = "https://qdmjewlitryupfhszcna.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkbWpld2xpdHJ5dXBmaHN6Y25hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NzM5OTAsImV4cCI6MjA4NTM0OTk5MH0.2gaqSG-h9cEWvC_U337wp9bZSMUvQ_UJ6tNC4nCDsgc";
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ApplyForm = () => {
   const navigate = useNavigate();

@@ -4,17 +4,14 @@ import { useEffect, useState, useRef } from "react";
 import Modal from "react-modal";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { FiLogOut, FiSave, FiX, FiCamera } from "react-icons/fi";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../../util/supabase"
 import axios from "axios";
 import toast from "react-hot-toast";
 import { jwtDecode } from "jwt-decode";
 
 Modal.setAppElement("#root");
 
-// ✅ MODIFICATION 1: Supabase client එක function එකෙන් පිටතට ගෙන ඇත (Warning එක නැවැත්වීමට)
-const supabaseUrl = "https://qdmjewlitryupfhszcna.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkbWpld2xpdHJ5dXBmaHN6Y25hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NzM5OTAsImV4cCI6MjA4NTM0OTk5MH0.2gaqSG-h9cEWvC_U337wp9bZSMUvQ_UJ6tNC4nCDsgc";
-const supabase = createClient(supabaseUrl, supabaseKey);
+
 
 export default function HeaderMadam() {
   const navigate = useNavigate();

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiUsers, FiBriefcase, FiX, FiCamera, FiSave, FiLogOut } from 'react-icons/fi';
 import Modal from 'react-modal';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from "../../util/supabase"
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 import { jwtDecode } from "jwt-decode"; 
@@ -32,7 +32,7 @@ const Sidebar = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const fileInputRef = useRef(null);
 
-  const [profileImage, setProfileImage] = useState('https://avatar.iran.liara.run/public/boy?username=Admin');
+  const [profileImage, setProfileImage] = useState('https://api.dicebear.com/9.x/adventurer/svg?seed=Admin');
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,9 +50,6 @@ const Sidebar = () => {
   const token = localStorage.getItem('token');
 
   // --- SUPABASE CONNECTION ---
-  const url = "https://qdmjewlitryupfhszcna.supabase.co";
-  const key = import.meta.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkbWpld2xpdHJ5dXBmaHN6Y25hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NzM5OTAsImV4cCI6MjA4NTM0OTk5MH0.2gaqSG-h9cEWvC_U337wp9bZSMUvQ_UJ6tNC4nCDsgc";
-  const supabase = createClient(url, key);
 
   // --- 1. FETCH USER DATA ---
   useEffect(() => {

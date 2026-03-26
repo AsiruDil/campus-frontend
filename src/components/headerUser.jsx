@@ -3,16 +3,13 @@ import { useEffect, useState, useRef } from "react"
 import Modal from "react-modal"
 import { IoMdNotificationsOutline } from "react-icons/io"
 import { FiMenu, FiLogOut, FiSave, FiX, FiCamera } from "react-icons/fi" 
-import { createClient } from "@supabase/supabase-js"
+import { supabase } from "../util/supabase"
 import axios from "axios"
 import toast from "react-hot-toast"
 import { jwtDecode } from "jwt-decode"
 
 Modal.setAppElement("#root")
 
-const url="https://qdmjewlitryupfhszcna.supabase.co";
-const key=import.meta.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkbWpld2xpdHJ5dXBmaHN6Y25hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NzM5OTAsImV4cCI6MjA4NTM0OTk5MH0.2gaqSG-h9cEWvC_U337wp9bZSMUvQ_UJ6tNC4nCDsgc"
-const supabase=createClient(url,key)
 
 export default function HeaderUser() {
   const navigate = useNavigate()
@@ -20,12 +17,12 @@ export default function HeaderUser() {
   const [isOpen, setIsOpen] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // --- Notification States ---
+
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   
-  // ✅ MODIFICATION: පණිවිඩ කොටුව පිටතින් ක්ලික් කළ විට වැසීමට අවශ්‍ය Ref එක
+
   const notifRef = useRef(null);
 
   const handleNotifClick = () => {
@@ -35,14 +32,14 @@ export default function HeaderUser() {
     }
   };
 
-  // ✅ MODIFICATION: ඕනෑම තැනක ක්ලික් කළ විට පණිවිඩ කොටුව වැසීමේ Logic එක
+ 
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifRef.current && !notifRef.current.contains(event.target)) {
         setIsNotifOpen(false);
       }
     }
-    // කොටුව විවෘතව ඇත්නම් පමණක් listener එක ක්‍රියාත්මක වේ
+ 
     if (isNotifOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
