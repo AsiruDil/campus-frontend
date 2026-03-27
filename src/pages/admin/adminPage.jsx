@@ -9,7 +9,7 @@ export default function AdminPage() {
   return (
     <div className="w-full h-screen bg-amber-500">
       <Routes>
-        <Route path="/" element={<Layout />}>
+        <Route path="/*" element={<Layout />}>
           {/* default: /admin → /admin/users */}
           <Route index element={<Navigate to="users" replace />} />
 
