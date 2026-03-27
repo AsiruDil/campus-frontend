@@ -55,7 +55,6 @@ export default function HeaderUser() {
     name: "", email: "", idNumber: "", age: "", sex: "", birthday: ""
   })
 
-  // We keep this here to decode the user's details
   const token = localStorage.getItem("token");
   
   useEffect(() => {
@@ -66,7 +65,6 @@ export default function HeaderUser() {
         const userName = decoded.userName;
         const userEmail = decoded.email;
 
-        // 2. 👇 Cleaner GET request for User Data
         const response = await api.get(`/api/users/${userName}`);
 
         if (response.data) {
@@ -77,7 +75,6 @@ export default function HeaderUser() {
           if (user.img) setProfileImage(user.img);
         }
 
-        // 3. 👇 Cleaner GET request for Notifications
         const notifRes = await api.get(`/api/users/history/${userEmail}`);
 
         if (notifRes.data) {
@@ -128,10 +125,7 @@ export default function HeaderUser() {
         finalImageUrl = `${data.publicUrl}?t=${Date.now()}`;
       }
       const updateUser = { id: userData.idNumber, age: userData.age, gender: userData.sex, birthday: userData.birthday, img: finalImageUrl }
-      
-      // 4. 👇 Cleaner PUT request for updating user
       await api.put(`/api/users/${userData.name}`, updateUser);
-      
       setProfileImage(finalImageUrl); setPreviewImage(null); setIsModalOpen(false);
       toast.success("Profile updated successfully ✅");
     } catch (error) { 
@@ -213,6 +207,7 @@ export default function HeaderUser() {
         <div className="max-w-7xl mx-auto h-[80px] flex items-center justify-between px-4 relative">
           
           <div className="flex md:hidden order-1">
+            {/* Opens the drawer */}
             <button onClick={() => setIsOpen(true)} className="text-2xl text-black p-2 -ml-2"><FiMenu /></button>
           </div>
 
@@ -232,7 +227,6 @@ export default function HeaderUser() {
           </nav>
 
           <div className="flex items-center gap-4 md:order-3 order-3">
-            
             <div className="relative" ref={notifRef}>
               <button onClick={handleNotifClick} className="text-2xl cursor-pointer hover:text-accent transition relative mt-2">
                 <IoMdNotificationsOutline />
@@ -276,7 +270,39 @@ export default function HeaderUser() {
           </div>
         </div>
       </header>
-      {/* Drawer and other code remains same */}
+
+      {/* --- MOBILE DRAWER IMPLEMENTATION --- */}
+      {/* Background Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-[60] md:hidden backdrop-blur-sm"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Side Drawer */}
+      <aside className={`fixed top-0 left-0 h-full w-[280px] bg-white z-[70] md:hidden transition-transform duration-300 shadow-2xl ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="h-[80px] flex items-center justify-between px-6 border-b border-gray-50">
+          <span className="font-bold text-lg">Menu</span>
+          <button onClick={() => setIsOpen(false)} className="text-2xl text-gray-400"><FiX /></button>
+        </div>
+        
+        <div className="flex flex-col gap-2 p-6 font-medium">
+          <Link to="/home" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50">Home</Link>
+          <Link to="/home/about" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50">About Us</Link>
+          <Link to="/home/contact" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50">Contact Us</Link>
+          <Link to="/home/contact" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50 text-green-500">My Applications</Link>
+          
+          <div className="mt-auto pt-6">
+             <button 
+              onClick={() => { localStorage.removeItem("token"); navigate("/"); }} 
+              className="w-full flex items-center justify-center gap-3 bg-red-50 text-red-500 py-4 rounded-xl font-bold"
+            >
+              <FiLogOut /> Logout
+            </button>
+          </div>
+        </div>
+      </aside>
     </>
   )
 }

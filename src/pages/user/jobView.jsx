@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -135,17 +134,19 @@ export default function JobView() {
           jobsData = data.content;
       }
 
-      // --- 👇 SORTING UPDATED: ENSURE NEWEST IS ALWAYS ON TOP ---
-      const sortedJobs = jobsData.sort((a, b) => {
-        const dateB = new Date(b.postDate).getTime();
-        const dateA = new Date(a.postDate).getTime();
+      // --- 👇 AGGRESSIVE SORTING: DATE FIRST, THEN INTERNAL ID ---
+      const sortedJobs = [...jobsData].sort((a, b) => {
+        const timeB = new Date(b.postDate || 0).getTime();
+        const timeA = new Date(a.postDate || 0).getTime();
         
         // If dates are different, sort by date descending
-        if (dateB !== dateA) {
-          return dateB - dateA;
+        if (timeB !== timeA) {
+          return timeB - timeA;
         }
-        // If dates are the same, use jobId as a tie-breaker (newest ID first)
-        return b.jobId.localeCompare(a.jobId);
+        
+        // If dates are the same, use MongoDB _id as the ultimate chronological tie-breaker
+        // Newest records in DB always have "higher" string values for _id
+        return String(b._id).localeCompare(String(a._id));
       });
 
       setAllJobs(sortedJobs);
