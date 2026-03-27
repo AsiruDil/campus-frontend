@@ -2,7 +2,7 @@
 import { Route, Routes } from "react-router-dom";
 import HeaderUser from "../../components/headerUser";
 import JobView from "./jobView";
-// 👇 IMPORT FIX: Ensure the case matches your actual file name perfectly. 
+
 import JobDetailsPage from "./jobDetails"; 
 import ApplyForm from "./applyForm";
 import Footer from "../../components/footer";
