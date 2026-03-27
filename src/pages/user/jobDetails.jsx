@@ -1,3 +1,4 @@
+// src/pages/user/jobDetails.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -13,7 +14,6 @@ import {
   FiAlertCircle
 } from "react-icons/fi";
 import { BiLoaderAlt } from "react-icons/bi";
-// 1. 👇 Import your custom api instance (Adjust the relative path if needed!)
 import api from '../../api/axios'; 
 
 const JobDetailsPage = () => {
@@ -33,7 +33,6 @@ const JobDetailsPage = () => {
   useEffect(() => {
     const fetchJobDetails = async () => {
       try {
-        // 2. 👇 Look how clean this is now! No headers, no manual base URL, no token fetching.
         const response = await api.get(`/api/jobs/${id}`);
         setJob(response.data);
       } catch (err) {
