@@ -30,6 +30,29 @@ export default function Header({
     otp: "" 
   })
 
+  // ✅ NEW: Effect to handle Google Auth Token from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+    const type = urlParams.get("type");
+
+    if (token) {
+      // Save the token correctly in Local Storage
+      localStorage.setItem("token", token);
+      toast.success("Login successful with Google");
+
+      // Clean the URL by removing the token from the address bar
+      window.history.replaceState({}, document.title, "/");
+
+      // Redirect based on user role
+      if (type === "admin") navigate("/admin");
+      else if (type === "madam") navigate("/madam");
+      else navigate("/home");
+      
+      setIsModalOpen(false);
+    }
+  }, [navigate, setIsModalOpen]);
+
   useEffect(() => {
     setIsForgotPassword(false)
     setIsVerifyEmail(false)
@@ -115,14 +138,10 @@ export default function Header({
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
-        /* --- FIXED: Responsive Modal Styles --- */
         className="max-w-md w-[95%] mx-auto bg-white rounded-3xl shadow-2xl outline-none overflow-hidden max-h-[90vh] flex flex-col relative z-[100]"
         overlayClassName="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-[99]"
       >
-        {/* Added Scrollable Container for small screens */}
         <div className="p-6 md:p-10 font-popins overflow-y-auto scrollbar-hide w-full">
-          
-          {/* Close Button for Better Mobile UX */}
           <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-black">✕</button>
 
           <div className="text-center mb-6">
@@ -210,7 +229,6 @@ export default function Header({
         </div>
       </Modal>
 
-      {/* --- HEADER UI (Same as yours) --- */}
       <header className="fixed top-0 left-0 w-full z-40 bg-white shadow-lg">
         <div className="max-w-7xl mx-auto h-[80px] flex items-center justify-between px-4">
           <div onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer">
