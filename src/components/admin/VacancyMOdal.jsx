@@ -4,8 +4,8 @@ import { X, MapPin, Building2, Calendar, DollarSign, Briefcase, GraduationCap, F
 const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = false }) => {
   const initialData = {
     jobRole: '',
-    location: 'Main Campus', // Default value from dropdown
-    faculty: 'Science',      // Default value from dropdown
+    location: 'Main Campus', 
+    faculty: 'Science',      
     department: '',
     jobDescription: '',
     jobResponsibilities: '',
@@ -17,6 +17,9 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
   };
 
   const [formData, setFormData] = useState(initialData);
+
+  // Get today's date in YYYY-MM-DD format to prevent past dates
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     if (editingVacancy) {
@@ -37,8 +40,6 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Auto-generate Job ID if creating new (Format: JOB + Timestamp)
-    // This prevents backend errors since we removed the input field
     const submissionData = { 
         ...formData, 
         jobId: editingVacancy ? editingVacancy.jobId : `JOB-${Date.now()}`,
@@ -65,7 +66,6 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
               
               <div className="flex flex-col gap-2 mt-2">
                 <div className="flex items-center gap-3">
-                  {/* Removed Job ID display here to keep it clean, or you can keep it if needed */}
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${formData.isAvailable ? 'bg-green-400 text-green-900' : 'bg-red-400 text-red-900'}`}>
                     {formData.isAvailable ? 'Active' : 'Hidden'}
                   </span>
@@ -134,8 +134,6 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               
-              {/* REMOVED JOB ID INPUT */}
-              
               <InputGroup label="Job Role" name="jobRole" value={formData.jobRole} onChange={handleChange} required />
               
               {/* LOCATION DROPDOWN */}
@@ -185,7 +183,7 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
               </select>
             </div>
 
-            {/* SALARY INPUT (Arrows Hidden) */}
+            {/* SALARY INPUT */}
             <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Salary</label>
                 <input
@@ -198,7 +196,16 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
                 />
             </div>
 
-            <InputGroup label="Deadline" name="deadline" type="date" value={formData.deadline} onChange={handleChange} required />
+            {/* DEADLINE INPUT WITH MIN DATE */}
+            <InputGroup 
+                label="Deadline" 
+                name="deadline" 
+                type="date" 
+                value={formData.deadline} 
+                onChange={handleChange} 
+                required 
+                min={today} // <-- Prevents past dates!
+            />
             </div>
 
             <TextAreaGroup label="Description" name="jobDescription" value={formData.jobDescription} onChange={handleChange} />
@@ -232,7 +239,8 @@ const Section = ({ title, icon, content }) => (
   </div>
 );
 
-const InputGroup = ({ label, name, value, onChange, type = "text", disabled = false, required = false, placeholder }) => (
+// Updated InputGroup to accept 'min'
+const InputGroup = ({ label, name, value, onChange, type = "text", disabled = false, required = false, placeholder, min }) => (
   <div>
     <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
     <input
@@ -243,6 +251,7 @@ const InputGroup = ({ label, name, value, onChange, type = "text", disabled = fa
       disabled={disabled}
       placeholder={placeholder}
       required={required}
+      min={min} // <-- Added this to pass the restriction down to the input
       className={`w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'}`}
     />
   </div>

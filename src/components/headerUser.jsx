@@ -4,12 +4,12 @@ import Modal from "react-modal"
 import { IoMdNotificationsOutline } from "react-icons/io"
 import { FiMenu, FiLogOut, FiSave, FiX, FiCamera } from "react-icons/fi" 
 import { supabase } from "../util/supabase"
-import axios from "axios"
+
+import api from "../api/axios" 
 import toast from "react-hot-toast"
 import { jwtDecode } from "jwt-decode"
 
 Modal.setAppElement("#root")
-
 
 export default function HeaderUser() {
   const navigate = useNavigate()
@@ -17,12 +17,10 @@ export default function HeaderUser() {
   const [isOpen, setIsOpen] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   
-
   const notifRef = useRef(null);
 
   const handleNotifClick = () => {
@@ -32,7 +30,6 @@ export default function HeaderUser() {
     }
   };
 
- 
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifRef.current && !notifRef.current.contains(event.target)) {
@@ -52,12 +49,13 @@ export default function HeaderUser() {
   const [profileImage, setProfileImage] = useState("profile.png")
   const [selectedFile, setSelectedFile] = useState(null) 
   const [previewImage, setPreviewImage] = useState(null)
-  const [isLoading,setIsloading]=useState(true)
+  const [isLoading, setIsloading] = useState(true)
   
   const [userData, setUserData] = useState({
     name: "", email: "", idNumber: "", age: "", sex: "", birthday: ""
   })
 
+  // We keep this here to decode the user's details
   const token = localStorage.getItem("token");
   
   useEffect(() => {
@@ -68,9 +66,8 @@ export default function HeaderUser() {
         const userName = decoded.userName;
         const userEmail = decoded.email;
 
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/users/${userName}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // 2. 👇 Cleaner GET request for User Data
+        const response = await api.get(`/api/users/${userName}`);
 
         if (response.data) {
           const user = response.data;
@@ -80,17 +77,19 @@ export default function HeaderUser() {
           if (user.img) setProfileImage(user.img);
         }
 
-        const notifRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/users/history/${userEmail}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // 3. 👇 Cleaner GET request for Notifications
+        const notifRes = await api.get(`/api/users/history/${userEmail}`);
 
         if (notifRes.data) {
           setNotifications(notifRes.data);
           setUnreadCount(notifRes.data.length); 
         }
         setIsloading(false);
-      } catch (error) { console.error("Error fetching data:", error); } 
-      finally { setIsloading(false); }
+      } catch (error) { 
+        console.error("Error fetching data:", error); 
+      } finally { 
+        setIsloading(false); 
+      }
     };
     fetchUserData();
   }, [token]);
@@ -129,12 +128,15 @@ export default function HeaderUser() {
         finalImageUrl = `${data.publicUrl}?t=${Date.now()}`;
       }
       const updateUser = { id: userData.idNumber, age: userData.age, gender: userData.sex, birthday: userData.birthday, img: finalImageUrl }
-      await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/users/${userData.name}`, updateUser, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      
+      // 4. 👇 Cleaner PUT request for updating user
+      await api.put(`/api/users/${userData.name}`, updateUser);
+      
       setProfileImage(finalImageUrl); setPreviewImage(null); setIsModalOpen(false);
       toast.success("Profile updated successfully ✅");
-    } catch (error) { toast.error("Failed to update profile ❌"); }
+    } catch (error) { 
+      toast.error("Failed to update profile ❌"); 
+    }
   }
 
   return (
@@ -231,7 +233,6 @@ export default function HeaderUser() {
 
           <div className="flex items-center gap-4 md:order-3 order-3">
             
-            {/* ✅ MODIFICATION: ref={notifRef} එක එකතු කරන ලදී */}
             <div className="relative" ref={notifRef}>
               <button onClick={handleNotifClick} className="text-2xl cursor-pointer hover:text-accent transition relative mt-2">
                 <IoMdNotificationsOutline />

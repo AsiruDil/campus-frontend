@@ -1,12 +1,10 @@
 // src/pages/Madam.jsx
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+// 1. 👇 Swapped axios for your custom api instance
+import api from '../../api/axios'; 
 import HeaderMadam from './headerMadam';
 import { FiMail, FiX } from 'react-icons/fi'; 
 
-// ==========================================
-// 1. MAIN PAGE COMPONENT
-// ==========================================
 export default function Madam() {
   const [applicants, setApplicants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,9 +32,8 @@ export default function Madam() {
       }
 
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/apply`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        // 2. 👇 Cleaner GET request without manual headers or long URLs
+        const response = await api.get(`/api/apply`);
 
         // Sort by date descending (Latest first)
         const sortedData = response.data.sort((a, b) => {
@@ -121,14 +118,11 @@ export default function Madam() {
 
     setIsSending(true);
     try {
-      const token = localStorage.getItem('token');
-      // Backend API call to send emails
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/users/send-email`, {
+      // 3. 👇 Cleaner POST request!
+      await api.post(`/api/users/send-email`, {
         emails: uniqueEmailsToSend, // Send the unique emails
         subject: emailSubject,
         message: emailMessage
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       alert("Emails sent successfully!");
@@ -148,8 +142,8 @@ export default function Madam() {
     <div className="min-h-screen bg-[#f8fafc] relative">
         <HeaderMadam/>
 
-      <main className="max-w-7xl mx-auto mt-20 p-8">
-        <div className="mb-6 flex justify-between items-end">
+      <main className="max-w-7xl mx-auto mt-20 p-4 sm:p-8">
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Applicant Overview</h1>
             <p className="text-gray-500 text-md">
@@ -161,7 +155,7 @@ export default function Madam() {
           {selectedRows.length > 0 && (
             <button 
               onClick={() => setIsEmailModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2"
             >
               <FiMail size={18} />
               Send Email ({selectedRows.length})
@@ -193,17 +187,17 @@ export default function Madam() {
           )}
           
           {/* Pagination Controls */}
-          <div className="p-6 flex justify-between items-center bg-white border-t border-gray-50">
+          <div className="p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white border-t border-gray-50">
             <p className="text-sm text-gray-500">Page {currentPage} of {totalPages || 1}</p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-end">
               <button 
                 onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed w-full sm:w-auto"
                 disabled={currentPage === 1}
               >Previous</button>
               <button 
                 onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed w-full sm:w-auto"
                 disabled={currentPage === totalPages || totalPages === 0}
               >Next</button>
             </div>
@@ -213,8 +207,8 @@ export default function Madam() {
 
       {/* Email Compose Modal */}
       {isEmailModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex justify-center items-center font-popins">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 relative">
+        <div className="fixed inset-0 bg-black/60 z-[100] flex justify-center items-center font-popins p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-4 sm:p-6 relative">
             <button 
               onClick={() => setIsEmailModalOpen(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
@@ -222,10 +216,10 @@ export default function Madam() {
               <FiX size={24} />
             </button>
             
-            <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
               <FiMail className="text-blue-600" /> Compose Email
             </h2>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-xs sm:text-sm text-gray-500 mb-6">
               Sending to <span className="font-bold text-blue-600">{
                 [...new Set(applicants.filter(app => selectedRows.includes(app.id)).map(app => app.email))].length
               }</span> applicant(s) based on your selection.
@@ -255,17 +249,17 @@ export default function Madam() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
               <button 
                 onClick={() => setIsEmailModalOpen(false)}
-                className="px-5 py-2.5 rounded-lg font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-gray-600 hover:bg-gray-100 transition-colors order-2 sm:order-1"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSendEmail}
                 disabled={isSending}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-70 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-bold shadow-md transition-colors flex items-center gap-2"
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:opacity-70 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-bold shadow-md transition-colors flex items-center justify-center gap-2 order-1 sm:order-2"
               >
                 {isSending ? "Sending..." : "Send Email"}
               </button>
@@ -277,12 +271,9 @@ export default function Madam() {
   );
 }
 
-// ==========================================
-// 2. SEARCH BAR COMPONENT
-// ==========================================
 function SearchBar({ onSearch }) {
   return (
-    <div className="p-6 bg-white border-b border-gray-50 relative">
+    <div className="p-4 sm:p-6 bg-white border-b border-gray-50 relative">
       <div className="flex gap-4">
         <div className="relative flex-1">
           <span className="absolute left-4 top-3.5 text-gray-400">🔍</span>
@@ -298,69 +289,68 @@ function SearchBar({ onSearch }) {
   );
 }
 
-// ==========================================
-// 3. USER TABLE COMPONENT
-// ==========================================
 function UserTable({ users, selectedRows, handleSelectRow, handleSelectAll, isAllSelected }) {
   return (
-    <table className="w-full text-left">
-      <thead className="bg-gray-50 border-b border-gray-100">
-        <tr>
-          <th className="p-4 text-xs font-bold text-gray-400 uppercase">User Name</th>
-          <th className="p-4 text-xs font-bold text-gray-400 uppercase">Email</th>
-          <th className="p-4 text-xs font-bold text-gray-400 uppercase">Requested Post</th>
-          <th className="p-4 text-xs font-bold text-gray-400 uppercase text-center">Actions</th>
-          
-          <th className="p-4 text-xs font-bold text-gray-400 uppercase text-center">
-            <input 
-              type="checkbox" 
-              checked={isAllSelected}
-              onChange={handleSelectAll}
-              className="w-4 h-4 cursor-pointer accent-blue-600"
-            />
-          </th>
-        </tr>
-      </thead>
-
-      <tbody className="divide-y divide-gray-50">
-        {users.map((user) => (
-          <tr key={user.id} className={`hover:bg-blue-50/30 ${selectedRows.includes(user.id) ? 'bg-blue-50/50' : ''}`}>
-            <td className="p-4 font-medium">{user.name}</td>
-            <td className="p-4 text-gray-500">{user.email}</td>
-            <td className="p-4">
-              <span className={`px-3 py-1 rounded-full text-[10px] font-bold 
-                ${user.post === 'Admin' ? 'bg-purple-100 text-purple-700' : 
-                  user.post === 'Madam' ? 'bg-pink-100 text-pink-700' : 
-                  'bg-amber-100 text-amber-700'}`}>
-                {user.post}
-              </span>
-            </td>
-            <td className="p-4 text-center">
-              {user.cv ? (
-                <a
-                  href={user.cv}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-600 hover:text-blue-800 font-semibold underline"
-                >
-                  Preview CV ↗
-                </a>
-              ) : (
-                <span className="text-gray-300 text-sm">No CV</span>
-              )}
-            </td>
+    <div className="overflow-x-auto w-full">
+      <table className="w-full text-left whitespace-nowrap">
+        <thead className="bg-gray-50 border-b border-gray-100">
+          <tr>
+            <th className="p-4 text-xs font-bold text-gray-400 uppercase">User Name</th>
+            <th className="p-4 text-xs font-bold text-gray-400 uppercase">Email</th>
+            <th className="p-4 text-xs font-bold text-gray-400 uppercase">Requested Post</th>
+            <th className="p-4 text-xs font-bold text-gray-400 uppercase text-center">Actions</th>
             
-            <td className="p-4 text-center">
+            <th className="p-4 text-xs font-bold text-gray-400 uppercase text-center">
               <input 
                 type="checkbox" 
-                checked={selectedRows.includes(user.id)}
-                onChange={() => handleSelectRow(user.id)}
+                checked={isAllSelected}
+                onChange={handleSelectAll}
                 className="w-4 h-4 cursor-pointer accent-blue-600"
               />
-            </td>
+            </th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+
+        <tbody className="divide-y divide-gray-50">
+          {users.map((user) => (
+            <tr key={user.id} className={`hover:bg-blue-50/30 ${selectedRows.includes(user.id) ? 'bg-blue-50/50' : ''}`}>
+              <td className="p-4 font-medium">{user.name}</td>
+              <td className="p-4 text-gray-500">{user.email}</td>
+              <td className="p-4">
+                <span className={`px-3 py-1 rounded-full text-[10px] font-bold 
+                  ${user.post === 'Admin' ? 'bg-purple-100 text-purple-700' : 
+                    user.post === 'Madam' ? 'bg-pink-100 text-pink-700' : 
+                    'bg-amber-100 text-amber-700'}`}>
+                  {user.post}
+                </span>
+              </td>
+              <td className="p-4 text-center">
+                {user.cv ? (
+                  <a
+                    href={user.cv}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 hover:text-blue-800 font-semibold underline"
+                  >
+                    Preview CV ↗
+                  </a>
+                ) : (
+                  <span className="text-gray-300 text-sm">No CV</span>
+                )}
+              </td>
+              
+              <td className="p-4 text-center">
+                <input 
+                  type="checkbox" 
+                  checked={selectedRows.includes(user.id)}
+                  onChange={() => handleSelectRow(user.id)}
+                  className="w-4 h-4 cursor-pointer accent-blue-600"
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

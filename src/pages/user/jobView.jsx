@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+// 1. 👇 Imported your custom api instance
+import api from '../../api/axios'; // Adjust path if needed!
+
 // --- React Icons Imports ---
 import { 
   FiSearch, 
@@ -111,6 +114,7 @@ export default function JobView() {
   // --- LOGOUT FUNCTIONALITY ---
   const handleLogout = () => {
     localStorage.removeItem('token'); 
+    localStorage.removeItem('userType');
     navigate('/login');              
   };
 
@@ -118,29 +122,9 @@ export default function JobView() {
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const backendUrl = import.meta.env.VITE_BACKEND_URL;
-
-      // NO PARAMS - Fetch everything at once
-      const response = await fetch(`${backendUrl}/api/jobs`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
-        }
-      });
-      
-      if (response.status === 403) {
-         console.error("Session expired or unauthorized.");
-         handleLogout(); 
-         return;
-      }
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} - ${response.statusText}`);
-      }
-      
-      const data = await response.json();
+      // 2. 👇 Cleaned up API call using Axios!
+      const response = await api.get('/api/jobs');
+      const data = response.data;
       
       let jobsData = [];
       // Handle different data structures
@@ -151,7 +135,6 @@ export default function JobView() {
       }
 
       // --- SORTING ADDED HERE: LATEST UPDATED FIRST ---
-      // Sorts by postDate descending (newest to oldest)
       const sortedJobs = jobsData.sort((a, b) => 
         new Date(b.postDate) - new Date(a.postDate)
       );
@@ -159,6 +142,13 @@ export default function JobView() {
       setAllJobs(sortedJobs);
 
     } catch (error) {
+      // 3. 👇 Axios automatically throws 403/401 errors to the catch block
+      if (error.response && (error.response.status === 403 || error.response.status === 401)) {
+         console.error("Session expired or unauthorized.");
+         handleLogout(); 
+         return;
+      }
+      
       console.error("Failed to fetch jobs:", error);
       setAllJobs([]);
     } finally {
@@ -275,7 +265,6 @@ export default function JobView() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4 items-start">
           
           {/* --- FILTER SIDEBAR (Left) --- */}
-          {/* FIXED POSITION: 'sticky' keeps it in view while scrolling, 'top-20' gives it spacing from top */}
           <aside className="col-span-1 hidden lg:block sticky top-20">
             <div className="rounded-2xl border border-white bg-white p-6 shadow-xl shadow-gray-200/50">
               <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-2">

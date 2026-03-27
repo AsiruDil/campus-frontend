@@ -5,13 +5,12 @@ import Modal from "react-modal";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { FiLogOut, FiSave, FiX, FiCamera } from "react-icons/fi";
 import { supabase } from "../../util/supabase"
-import axios from "axios";
+// 1. 👇 Swapped axios for your custom api instance (Adjust path if needed)
+import api from "../../api/axios"; 
 import toast from "react-hot-toast";
 import { jwtDecode } from "jwt-decode";
 
 Modal.setAppElement("#root");
-
-
 
 export default function HeaderMadam() {
   const navigate = useNavigate();
@@ -35,7 +34,6 @@ export default function HeaderMadam() {
 
   const token = localStorage.getItem("token");
 
-  // ✅ MODIFICATION 2: Dependency array එක [token] ලෙස වෙනස් කර ඇත (Infinite loop වැලැක්වීමට)
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -47,9 +45,8 @@ export default function HeaderMadam() {
         const decoded = jwtDecode(token);
         const userNameFromToken = decoded.userName;
 
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/users/${userNameFromToken}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // 2. 👇 Cleaner GET request without manual headers or long URLs
+        const response = await api.get(`/api/users/${userNameFromToken}`);
 
         if (response.data) {
           const user = response.data;
@@ -117,13 +114,12 @@ export default function HeaderMadam() {
 
   const triggerFileInput = () => fileInputRef.current.click();
 
-  // ✅ MODIFICATION 3: handleSave function එක නිවැරදි කර ඇත
   async function handleSave() {
     try {
       let finalImageUrl = profileImage;
 
       if (selectedFile) {
-        // පැරණි image එක delete කිරීමේ කොටස
+   
         if (profileImage && profileImage.includes("supabase") && !profileImage.startsWith("blob:")) {
           const oldFileName = profileImage.split("/profiles/")[1]?.split("?")[0];
           if (oldFileName) {
@@ -150,12 +146,8 @@ export default function HeaderMadam() {
         img: finalImageUrl,
       };
 
-      // 🔴 Backend එකට userName එක param එකක් ලෙස යැවීම
-      const response = await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/users/${userData.name}`, 
-        updatePayload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // 3. 👇 Cleaner PUT request!
+      const response = await api.put(`/api/users/${userData.name}`, updatePayload);
 
       if (response.status === 200) {
         setProfileImage(finalImageUrl);
@@ -172,6 +164,7 @@ export default function HeaderMadam() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("userType"); // Good practice to remove this as well
     navigate("/");
   };
 

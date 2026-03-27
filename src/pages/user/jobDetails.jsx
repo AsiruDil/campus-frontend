@@ -1,4 +1,4 @@
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   FiChevronLeft, 
@@ -13,10 +13,12 @@ import {
   FiAlertCircle
 } from "react-icons/fi";
 import { BiLoaderAlt } from "react-icons/bi";
+// 1. 👇 Import your custom api instance (Adjust the relative path if needed!)
+import api from '../../api/axios'; 
 
 const JobDetailsPage = () => {
   const navigate = useNavigate();
-  const { id } = useParams(); // Assumes route is /job/:id
+  const { id } = useParams(); 
   
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,22 +33,9 @@ const JobDetailsPage = () => {
   useEffect(() => {
     const fetchJobDetails = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const backendUrl = import.meta.env.VITE_BACKEND_URL;
-        
-        // FIXED: Used ${id} instead of {id}
-        const response = await fetch(`${backendUrl}/api/jobs/${id}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
-          }
-        });
-
-        if (!response.ok) throw new Error('Failed to fetch job details');
-        
-        const data = await response.json();
-        setJob(data);
+        // 2. 👇 Look how clean this is now! No headers, no manual base URL, no token fetching.
+        const response = await api.get(`/api/jobs/${id}`);
+        setJob(response.data);
       } catch (err) {
         setError(err.message);
         console.error(err);
