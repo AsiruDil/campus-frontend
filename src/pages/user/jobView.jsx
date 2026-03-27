@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -134,10 +135,18 @@ export default function JobView() {
           jobsData = data.content;
       }
 
-      // --- SORTING ADDED HERE: LATEST UPDATED FIRST ---
-      const sortedJobs = jobsData.sort((a, b) => 
-        new Date(b.postDate) - new Date(a.postDate)
-      );
+      // --- 👇 SORTING UPDATED: ENSURE NEWEST IS ALWAYS ON TOP ---
+      const sortedJobs = jobsData.sort((a, b) => {
+        const dateB = new Date(b.postDate).getTime();
+        const dateA = new Date(a.postDate).getTime();
+        
+        // If dates are different, sort by date descending
+        if (dateB !== dateA) {
+          return dateB - dateA;
+        }
+        // If dates are the same, use jobId as a tie-breaker (newest ID first)
+        return b.jobId.localeCompare(a.jobId);
+      });
 
       setAllJobs(sortedJobs);
 
