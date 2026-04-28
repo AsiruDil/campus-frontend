@@ -2,8 +2,8 @@ import { Route, Routes } from "react-router-dom";
 import Footer from "../components/footer";
 import Header from "../components/header";
 import Home from "../components/homePage";
-import About from "./about";
-import Contact from "./contact";
+import About from '../pages/about'
+import Contact from '../pages/contact'
 import { useState } from "react";
 
 

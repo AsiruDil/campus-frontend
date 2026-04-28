@@ -69,6 +69,7 @@ function App() {
           
             <Route path="/" element={<HomePage/>}/>
 
+
             {/* 2. User Dashboard */}
             <Route path="/home/*" element={
               <ProtectedRoute allowedRoles={["user"]}>
