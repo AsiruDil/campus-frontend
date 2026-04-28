@@ -67,7 +67,7 @@ function App() {
       
           <Routes>
           
-            <Route path="/" element={<HomePage/>}/>
+            <Route path="/*" element={<HomePage/>}/>
 
 
             {/* 2. User Dashboard */}
