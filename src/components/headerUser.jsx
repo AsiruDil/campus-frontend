@@ -223,7 +223,7 @@ export default function HeaderUser() {
             <Link to="/home" className="hover:text-accent transition">Home</Link>
             <Link to="/home/about" className="hover:text-accent transition">About Us</Link>
             <Link to="/home/contact" className="hover:text-accent transition">Contact Us</Link>
-            <Link to="/home/contact" className="text-green-500 hover:text-green-600">My applications</Link>
+            {/* <Link to="/home/contact" className="text-green-500 hover:text-green-600">My applications</Link> */}
           </nav>
 
           <div className="flex items-center gap-4 md:order-3 order-3">
@@ -291,7 +291,7 @@ export default function HeaderUser() {
           <Link to="/home" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50">Home</Link>
           <Link to="/home/about" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50">About Us</Link>
           <Link to="/home/contact" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50">Contact Us</Link>
-          <Link to="/home/contact" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50 text-green-500">My Applications</Link>
+          {/* <Link to="/home/contact" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50 text-green-500">My Applications</Link> */}
           
           <div className="mt-auto pt-6">
              <button 
