@@ -62,7 +62,7 @@ function App() {
   return (
    <BrowserRouter>
     <div>
-      <Toaster position='top-right'/>
+    
       <AuthHandler /> 
       
           <Routes>
