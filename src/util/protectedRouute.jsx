@@ -1,3 +1,4 @@
+import { roleHome } from "./roles";
 import { Navigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -27,14 +28,13 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     );
 
     const payload = JSON.parse(jsonPayload);
+    if (payload.exp && payload.exp * 1000 <= Date.now()) throw new Error('Session expired');
     const userRole = payload.role;
 
     // 4. Check permissions
     if (allowedRoles && !allowedRoles.includes(userRole)) {
       toast.error("Access Denied: You don't have permission for this page.");
-      if (userRole === "admin") return <Navigate to="/admin" replace />;
-      if (userRole === "madam") return <Navigate to="/madam" replace />;
-      return <Navigate to="/home" replace />;
+      return <Navigate to={roleHome(userRole)} replace />;
     }
 
     // 5. Success! Let them in.

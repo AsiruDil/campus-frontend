@@ -25,3 +25,7 @@ dist-ssr
 
 .env
 .env.*
+
+# Browser test outputs
+/test-results/
+/playwright-report/

@@ -5,13 +5,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios'; // Adjust path if needed!
 
 // --- React Icons Imports ---
-import { 
-  FiSearch, 
-  FiMapPin, 
-  FiBriefcase, 
-  FiBookmark, 
-  FiChevronLeft, 
-  FiChevronRight, 
+import {
+  FiSearch,
+  FiMapPin,
+  FiBriefcase,
+  FiBookmark,
+  FiChevronLeft,
+  FiChevronRight,
   FiChevronDown,
   FiFilter
 } from "react-icons/fi";
@@ -30,11 +30,11 @@ const FilterSection = ({ title, options, selectedOptions, onChange }) => (
     <div className="mt-4 space-y-3">
       {options.map((opt) => (
         <label key={opt} className="flex items-center space-x-3 text-sm text-gray-600 cursor-pointer hover:text-blue-600 transition-colors">
-          <input 
-            type="checkbox" 
+          <input
+            type="checkbox"
             checked={selectedOptions.includes(opt)}
             onChange={() => onChange(opt)}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer" 
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
           />
           <span>{opt}</span>
         </label>
@@ -56,12 +56,12 @@ const JobCard = ({ job }) => {
   return (
     <div className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-1 h-full bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-      
+
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <h4 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{job.jobRole}</h4>
           <p className="text-sm text-gray-500 mt-1 font-medium">{job.department}</p>
-          
+
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold tracking-wide">
             <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-blue-600">
               <FiMapPin /> {job.location}
@@ -79,7 +79,7 @@ const JobCard = ({ job }) => {
       <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between">
         <p className="text-xs text-gray-400 font-medium">Posted {formatDate(job.postDate)}</p>
         <Link to={`/home/jobDetails/${job.jobId}`} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 group/link">
-          Details 
+          Details
           <span className="group-hover/link:translate-x-1 transition-transform">
             <FiChevronRight />
           </span>
@@ -92,17 +92,17 @@ const JobCard = ({ job }) => {
 // --- Main Component: Home ---
 
 export default function JobView() {
-  const navigate = useNavigate(); 
-  
+  const navigate = useNavigate();
+
   // RAW DATA STATE (Everything from backend)
   const [allJobs, setAllJobs] = useState([]);
-  
+
   // DISPLAY STATE (Filtered & Paginated)
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Logic state
-  const [currentPage, setCurrentPage] = useState(0); 
+  const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const pageSize = 5;
 
@@ -112,11 +112,11 @@ export default function JobView() {
   const [selectedFaculties, setSelectedFaculties] = useState([]);
 
   // --- LOGOUT FUNCTIONALITY ---
-  const handleLogout = () => {
-    localStorage.removeItem('token'); 
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('token');
     localStorage.removeItem('userType');
-    navigate('/login');              
-  };
+    navigate('/');
+  }, [navigate]);
 
   // --- 1. FETCH ALL DATA (Runs Once) ---
   const fetchJobs = useCallback(async () => {
@@ -125,7 +125,7 @@ export default function JobView() {
       // 2. 👇 Cleaned up API call using Axios!
       const response = await api.get('/api/jobs');
       const data = response.data;
-      
+
       let jobsData = [];
       // Handle different data structures
       if (Array.isArray(data)) {
@@ -138,12 +138,12 @@ export default function JobView() {
       const sortedJobs = [...jobsData].sort((a, b) => {
         const timeB = new Date(b.postDate || 0).getTime();
         const timeA = new Date(a.postDate || 0).getTime();
-        
+
         // If dates are different, sort by date descending
         if (timeB !== timeA) {
           return timeB - timeA;
         }
-        
+
         // If dates are the same, use MongoDB _id as the ultimate chronological tie-breaker
         // Newest records in DB always have "higher" string values for _id
         return String(b._id).localeCompare(String(a._id));
@@ -155,16 +155,16 @@ export default function JobView() {
       // 3. 👇 Axios automatically throws 403/401 errors to the catch block
       if (error.response && (error.response.status === 403 || error.response.status === 401)) {
          console.error("Session expired or unauthorized.");
-         handleLogout(); 
+         handleLogout();
          return;
       }
-      
+
       console.error("Failed to fetch jobs:", error);
       setAllJobs([]);
     } finally {
       setLoading(false);
     }
-  }, [navigate]); 
+  }, [handleLogout]);
 
   // --- 2. FILTER & PAGINATE (Runs on State Change) ---
   useEffect(() => {
@@ -173,8 +173,8 @@ export default function JobView() {
     // Filter by Search Term
     if (searchTerm) {
         const lowerTerm = searchTerm.toLowerCase();
-        result = result.filter(job => 
-            (job.jobRole && job.jobRole.toLowerCase().includes(lowerTerm)) || 
+        result = result.filter(job =>
+            (job.jobRole && job.jobRole.toLowerCase().includes(lowerTerm)) ||
             (job.department && job.department.toLowerCase().includes(lowerTerm))
         );
     }
@@ -208,21 +208,21 @@ export default function JobView() {
   // --- HANDLERS ---
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(0); 
+    setCurrentPage(0);
   };
 
   const handleTypeToggle = (type) => {
-    setSelectedTypes(prev => 
+    setSelectedTypes(prev =>
       prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
     );
-    setCurrentPage(0); 
+    setCurrentPage(0);
   };
 
   const handleFacultyToggle = (faculty) => {
-    setSelectedFaculties(prev => 
+    setSelectedFaculties(prev =>
       prev.includes(faculty) ? prev.filter(f => f !== faculty) : [...prev, faculty]
     );
-    setCurrentPage(0); 
+    setCurrentPage(0);
   };
 
   const applyFilters = () => {
@@ -238,7 +238,7 @@ export default function JobView() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 font-popins pb-20">
-      
+
       {/* --- HERO / SEARCH SECTION --- */}
       <div className="bg-white border-b border-gray-100 pb-10 pt-8 mt-18 shadow-sm">
         <div className=" flex justify-center flex-col items-center mx-auto px-6">
@@ -255,7 +255,7 @@ export default function JobView() {
                     <div className="pl-6 text-gray-400">
                         <FiSearch size={22} />
                     </div>
-                    <input 
+                    <input
                         value={searchTerm}
                         onChange={handleSearchChange}
                         onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
@@ -273,7 +273,7 @@ export default function JobView() {
       {/* --- CONTENT AREA --- */}
       <main className="container mx-auto px-6 py-10">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4 items-start">
-          
+
           {/* --- FILTER SIDEBAR (Left) --- */}
           <aside className="col-span-1 hidden lg:block sticky top-20">
             <div className="rounded-2xl border border-white bg-white p-6 shadow-xl shadow-gray-200/50">
@@ -283,22 +283,22 @@ export default function JobView() {
                 </h3>
                 <button onClick={resetFilters} className="text-xs font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wide">Reset All</button>
               </div>
-              
-              <FilterSection 
-                title="Job Type" 
-                options={['Full-time', 'Part-time', 'Temporary']} 
+
+              <FilterSection
+                title="Job Type"
+                options={['Full-time', 'Part-time', 'Temporary']}
                 selectedOptions={selectedTypes}
                 onChange={handleTypeToggle}
               />
-              
-              <FilterSection 
-                title="Faculty" 
-                options={['Science', 'Art', 'Management', 'Engineering','Medicine','Technology','Agriculture','Fisheries and Marine Science']} 
+
+              <FilterSection
+                title="Faculty"
+                options={['Science', 'Art', 'Management', 'Engineering','Medicine','Technology','Agriculture','Fisheries and Marine Science']}
                 selectedOptions={selectedFaculties}
                 onChange={handleFacultyToggle}
               />
-              
-              <button 
+
+              <button
                 onClick={applyFilters}
                 className="w-full mt-6 bg-gray-900 text-white text-sm font-bold py-3 rounded-xl hover:bg-gray-800 hover:shadow-lg transition-all duration-300 transform active:scale-95"
               >
@@ -341,7 +341,7 @@ export default function JobView() {
             {/* --- PAGINATION --- */}
             {totalPages > 1 && (
               <div className="mt-12 flex justify-center gap-3">
-                <button 
+                <button
                   onClick={() => { setCurrentPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   disabled={currentPage === 0}
                   className="w-12 h-12 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-30 disabled:hover:bg-white shadow-sm transition-all"
@@ -355,8 +355,8 @@ export default function JobView() {
                         key={i}
                         onClick={() => { setCurrentPage(i); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                         className={`w-12 h-12 flex items-center justify-center rounded-xl font-bold transition-all duration-300 ${
-                        currentPage === i 
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105' 
+                        currentPage === i
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105'
                             : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                         }`}
                     >
@@ -365,7 +365,7 @@ export default function JobView() {
                     ))}
                 </div>
 
-                <button 
+                <button
                   onClick={() => { setCurrentPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   disabled={currentPage === totalPages - 1}
                   className="w-12 h-12 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-30 disabled:hover:bg-white shadow-sm transition-all"

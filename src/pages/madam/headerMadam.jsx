@@ -6,7 +6,7 @@ import { IoMdNotificationsOutline } from "react-icons/io";
 import { FiLogOut, FiSave, FiX, FiCamera } from "react-icons/fi";
 import { supabase } from "../../util/supabase"
 // 1. 👇 Swapped axios for your custom api instance (Adjust path if needed)
-import api from "../../api/axios"; 
+import api from "../../api/axios";
 import toast from "react-hot-toast";
 import { jwtDecode } from "jwt-decode";
 
@@ -21,7 +21,7 @@ export default function HeaderMadam() {
   const [profileImage, setProfileImage] = useState("profile.png");
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
-  const [isLoading, setIsloading] = useState(true);
+  const [, setIsloading] = useState(true);
 
   const [userData, setUserData] = useState({
     name: "",
@@ -119,7 +119,7 @@ export default function HeaderMadam() {
       let finalImageUrl = profileImage;
 
       if (selectedFile) {
-   
+
         if (profileImage && profileImage.includes("supabase") && !profileImage.startsWith("blob:")) {
           const oldFileName = profileImage.split("/profiles/")[1]?.split("?")[0];
           if (oldFileName) {
@@ -238,7 +238,7 @@ export default function HeaderMadam() {
       <header className="w-full fixed top-0 left-0 z-50 bg-white shadow-lg font-popins">
         <div className="max-w-7xl mx-auto h-[80px] flex items-center justify-between px-4">
           <div className="flex items-center gap-8">
-            <div onClick={() => navigate("/madam")} className="flex items-center gap-2 cursor-pointer">
+            <div onClick={() => navigate("/admin")} className="flex items-center gap-2 cursor-pointer">
               <img src="/logo.png" className="h-[45px] md:h-[55px]" alt="Logo" />
               <div className="flex flex-col leading-tight text-left">
                 <span className="font-bold text-sm md:text-lg whitespace-nowrap">University of Ruhuna</span>
@@ -253,9 +253,9 @@ export default function HeaderMadam() {
             </div>
 
             <div onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-col items-start justify-center cursor-pointer group">
-              <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-blue-500 transition">Moderator</span>
+              <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-blue-500 transition">Admin</span>
               <div className="flex items-center gap-1">
-                <span className="text-xs md:text-sm font-black text-gray-800 group-hover:text-blue-600 transition max-w-[150px] truncate">{userData.name || "Madam"}</span>
+                <span className="text-xs md:text-sm font-black text-gray-800 group-hover:text-blue-600 transition max-w-[150px] truncate">{userData.name || "Admin"}</span>
                 <span className="animate-pulse text-xs md:text-sm">👋</span>
               </div>
             </div>

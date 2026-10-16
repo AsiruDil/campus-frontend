@@ -1,4 +1,5 @@
 import './App.css'
+import { roleHome } from './util/roles'
 import { BrowserRouter, Route, Routes, useSearchParams, useNavigate, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useEffect } from 'react'
@@ -8,7 +9,7 @@ import HomePage from './pages/home'
 import HomeSerect from './pages/user/homescretePage'
 import MadamPage from './pages/madam/madamPage'
 import AdminPage from './pages/admin/adminPage'
-import ProtectedRoute from './util/protectedRouute' 
+import ProtectedRoute from './util/protectedRouute'
 import NotFound from './pages/notFound'
 
 
@@ -16,15 +17,14 @@ const SmartRedirect = () => {
   const token = localStorage.getItem("token");
   const userType = localStorage.getItem("userType");
 
-  
+
   if (!token) {
-    return <NotFound />; 
+    return <NotFound />;
   }
 
-  if (userType === "admin") return <Navigate to="/admin" replace />;
-  if (userType === "madam") return <Navigate to="/madam" replace />;
-  
- 
+  if (userType) return <Navigate to={roleHome(userType)} replace />;
+
+
   return <Navigate to="/home" replace />;
 };
 
@@ -42,16 +42,14 @@ function AuthHandler() {
       toast.error("Your account is blocked. Please contact support.")
       setSearchParams({})
     } else if (token) {
-      
+
       localStorage.setItem("token", token)
-      localStorage.setItem("userType", type || "user") 
-      
+      localStorage.setItem("userType", type || "user")
+
       toast.success("Logged in with Google!")
       setSearchParams({})
-      
-      if (type === "admin") navigate("/admin")
-      else if (type === "madam") navigate("/madam")
-      else navigate("/home")
+
+      navigate(roleHome(type))
     }
   }, [searchParams, navigate, setSearchParams])
 
@@ -62,11 +60,12 @@ function App() {
   return (
    <BrowserRouter>
     <div>
-    
-      <AuthHandler /> 
-      
+
+      <Toaster position="top-right" />
+      <AuthHandler />
+
           <Routes>
-          
+
             <Route path="/*" element={<HomePage/>}/>
 
 
@@ -78,19 +77,20 @@ function App() {
             }/>
 
             {/* 3. Admin Dashboard */}
-            <Route path="/admin/*" element={
-              <ProtectedRoute allowedRoles={["admin"]}>
+            <Route path="/super-admin/*" element={
+              <ProtectedRoute allowedRoles={["superadmin"]}>
                 <AdminPage/>
               </ProtectedRoute>
             }/>
 
             {/* 4. Madam Dashboard */}
-            <Route path="/madam/*" element={
-              <ProtectedRoute allowedRoles={["madam"]}>
+            <Route path="/admin/*" element={
+              <ProtectedRoute allowedRoles={["admin"]}>
                 <MadamPage/>
               </ProtectedRoute>
             }/>
 
+            <Route path="/madam/*" element={<Navigate to="/admin" replace />} />
             {/* 5. Catch-All: Now uses the SmartRedirect to prevent 404s for logged-in users */}
             <Route path="*" element={<SmartRedirect />} />
           </Routes>

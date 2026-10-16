@@ -4,13 +4,13 @@ import { FiUsers, FiBriefcase, FiX, FiCamera, FiSave, FiLogOut } from 'react-ico
 import Modal from 'react-modal';
 import { supabase } from "../../util/supabase"
 
-import api from '../../api/axios'; 
-import toast, { Toaster } from 'react-hot-toast';
-import { jwtDecode } from "jwt-decode"; 
+import api from '../../api/axios';
+import toast from 'react-hot-toast';
+import { jwtDecode } from "jwt-decode";
 
 Modal.setAppElement('#root');
 
-const SidebarItem = ({ to, icon: Icon, label, isActive }) => {
+const SidebarItem = ({ to, icon, label, isActive }) => {
   return (
     <Link
       to={to}
@@ -19,7 +19,7 @@ const SidebarItem = ({ to, icon: Icon, label, isActive }) => {
         isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
       }`}
     >
-      <Icon size={20} />
+      {React.createElement(icon, { size: 20 })}
       <span>{label}</span>
     </Link>
   );
@@ -33,10 +33,10 @@ const Sidebar = ({ isMobileOpen, setMobileOpen }) => {
   const [profileImage, setProfileImage] = useState('/profile.png');
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [userData, setUserData] = useState({ name: "", email: "", idNumber: "", age: "-", sex: "-", birthday: "" });
-  
+
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -45,18 +45,18 @@ const Sidebar = ({ isMobileOpen, setMobileOpen }) => {
         if (!token) { setIsLoading(false); return; }
         const decoded = jwtDecode(token);
         const userName = decoded.userName || decoded.sub;
-        
+
         const response = await api.get(`/api/users/${userName}`);
-        
+
         if (response.data) {
           const user = response.data;
           setUserData({ name: user.userName || '', email: user.email || '', idNumber: user.id || '', age: user.age || '-', sex: user.gender || '-', birthday: user.birthday || '' });
           if (user.img) setProfileImage(user.img);
         }
-      } catch (error) { 
-        console.error("Error fetching profile data:", error); 
-      } finally { 
-        setIsLoading(false); 
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchUserData();
@@ -110,17 +110,17 @@ const Sidebar = ({ isMobileOpen, setMobileOpen }) => {
         const { data } = supabase.storage.from("im").getPublicUrl(filePath);
         finalImageUrl = `${data.publicUrl}?t=${Date.now()}`;
       }
-      
+
       const updateUser = { id: userData.idNumber, age: userData.age !== '-' ? userData.age : null, gender: userData.sex !== '-' ? userData.sex : null, birthday: userData.birthday || null, img: finalImageUrl };
-      
+
       await api.put(`/api/users/${userData.name}`, updateUser);
-      
+
       setProfileImage(finalImageUrl); setPreviewImage(null); setSelectedFile(null); setIsModalOpen(false);
       toast.success("Profile updated successfully ✅", { id: toastId });
-    } catch (error) { 
-      toast.error("Failed to update profile ❌", { id: toastId }); 
-    } finally { 
-      setIsSaving(false); 
+    } catch {
+      toast.error("Failed to update profile ❌", { id: toastId });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -128,22 +128,24 @@ const Sidebar = ({ isMobileOpen, setMobileOpen }) => {
 
   return (
     <>
-      <Toaster position="top-right" />
       <div className={`w-64 lg:mt-0 sm:mt-15 bg-white h-screen fixed left-0 top-0 border-r border-gray-100 flex flex-col z-40 transition-transform duration-300 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div onClick={() => setIsModalOpen(true)} className="p-6 flex items-center gap-4 mb-6 hover:bg-gray-50 transition-all cursor-pointer">
           <img src={previewImage || profileImage} className="w-12 h-12 rounded-full object-cover border-2 border-gray-200" alt="Admin" onError={(e) => { e.target.src = "https://ui-avatars.com/api/?name=Admin"; }} />
           <div className="overflow-hidden">
-            <h3 className="font-bold text-textDark truncate">{userData.name || "Admin"}</h3>
+            <h3 className="font-bold text-textDark truncate">{userData.name || "Super Admin"}</h3>
             <p className="text-[10px] text-textGray truncate">{userData.email || "admin@gmail.com"}</p>
           </div>
         </div>
-        
+
         <nav className="flex-1 px-4 space-y-2">
           <div onClick={() => setMobileOpen(false)}>
-            <SidebarItem to="/admin/users" icon={FiUsers} label="Manage Users" isActive={location.pathname.includes('/admin/users')} />
+            <SidebarItem to="/super-admin/users" icon={FiUsers} label="Manage Users" isActive={location.pathname.includes('/super-admin/users')} />
           </div>
           <div onClick={() => setMobileOpen(false)}>
-            <SidebarItem to="/admin/vacancies" icon={FiBriefcase} label="Manage Job Vacancies" isActive={location.pathname.includes('/admin/vacancies')} />
+            <SidebarItem to="/super-admin/vacancies" icon={FiBriefcase} label="Manage Job Vacancies" isActive={location.pathname.includes('/super-admin/vacancies')} />
+          </div>
+          <div onClick={() => setMobileOpen(false)}>
+            <SidebarItem to="/super-admin/applications" icon={FiUsers} label="Applications" isActive={location.pathname.includes('/super-admin/applications')} />
           </div>
         </nav>
 

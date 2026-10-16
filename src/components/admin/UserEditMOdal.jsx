@@ -1,74 +1,135 @@
-import React, { useState, useEffect } from 'react';
-import { FiX } from 'react-icons/fi';
+import { useEffect, useState } from "react";
+import ReviewDialog from "../review/ReviewDialog";
+import api from "../../api/axios";
 
-const UserEditModal = ({ isOpen, onClose, user, onSave }) => {
-  const [selectedRole, setSelectedRole] = useState('');
-
+export default function UserEditModal({ isOpen, onClose, user, onSave }) {
+  const [role, setRole] = useState(user?.role || "user");
+  const [faculty, setFaculty] = useState(user?.faculty || "");
+  const [department, setDepartment] = useState(user?.department || "");
+  const [jobs, setJobs] = useState([]);
+  const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (user) {
-      setSelectedRole(user.role);
-    }
-  }, [user]);
-
+    if (!isOpen) return;
+    let active = true;
+    api
+      .get("/api/jobs")
+      .then((response) => {
+        if (active) setJobs(response.data);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [isOpen]);
   if (!isOpen || !user) return null;
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(user.userName, selectedRole);
-    onClose();
-  };
-
+  const faculties = [...new Set(jobs.map((job) => job.faculty))].filter(
+    Boolean,
+  );
+  const departments = [
+    ...new Set(
+      jobs
+        .filter((job) => job.faculty === faculty)
+        .map((job) => job.department),
+    ),
+  ].filter(Boolean);
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-96 max-w-full mx-4">
-        {/* Modal Header */}
-        <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="text-lg font-bold text-textDark">Edit User Role</h3>
-          <button onClick={onClose} className="text-textGray hover:text-textDark">
-            <FiX size={24} />
+    <ReviewDialog
+      title="Manage role and access"
+      onClose={() => !busy && onClose()}
+    >
+      <form
+        className="space-y-5"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          setBusy(true);
+          try {
+            await onSave(user.userName, {
+              role,
+              faculty: faculty.trim(),
+              department: department.trim(),
+            });
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <p className="text-slate-500">
+          {user.userName} · {user.email}
+        </p>
+        <label className="block">
+          <span className="block font-semibold mb-2">Role</span>
+          <select
+            className="w-full border border-slate-200 rounded-xl p-3"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+          >
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+            <option value="superadmin">Super Admin</option>
+          </select>
+        </label>
+        {role === "admin" && (
+          <>
+            <p className="text-sm text-slate-500">
+              Admins review applications only within their assigned faculty and
+              department. Use the same names as the job vacancies.
+            </p>
+            <label className="block">
+              <span className="block font-semibold mb-2">Assigned faculty</span>
+              <input
+                className="w-full border border-slate-200 rounded-xl p-3"
+                list="role-faculties"
+                required
+                maxLength={150}
+                value={faculty}
+                onChange={(e) => {
+                  setFaculty(e.target.value);
+                  setDepartment("");
+                }}
+              />
+              <datalist id="role-faculties">
+                {faculties.map((value) => (
+                  <option key={value} value={value} />
+                ))}
+              </datalist>
+            </label>
+            <label className="block">
+              <span className="block font-semibold mb-2">
+                Assigned department
+              </span>
+              <input
+                className="w-full border border-slate-200 rounded-xl p-3"
+                list="role-departments"
+                required
+                maxLength={150}
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+              />
+              <datalist id="role-departments">
+                {departments.map((value) => (
+                  <option key={value} value={value} />
+                ))}
+              </datalist>
+            </label>
+          </>
+        )}
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            className="border rounded-xl px-4 py-2"
+            disabled={busy}
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            disabled={busy}
+            className="bg-blue-600 text-white rounded-xl px-5 py-2"
+          >
+            {busy ? "Saving…" : "Save changes"}
           </button>
         </div>
-        
-        <form onSubmit={handleSubmit} className="p-6">
-          <p className="mb-4 text-textGray text-sm">
-            Changing role for: <br/>
-            <span className="font-bold text-textDark text-base">{user.userName}</span> 
-            <span className="block text-xs text-textGray">({user.email})</span>
-          </p>
-          
-          <div className="mb-6">
-            <label className="block text-sm font-bold mb-2 text-textGray">Select Role</label>
-            <select 
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-gray-50 font-medium"
-            >
-              {/* Using lowercase to match standard DB values, or Admin/Employer as you prefer */}
-              <option value="user">User</option>
-              <option value="madam">Moderator</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md font-medium text-textGray hover:bg-gray-100 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-blue-600 transition-colors shadow-sm"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </ReviewDialog>
   );
-};
-
-export default UserEditModal;
+}
