@@ -1,25 +1,25 @@
 // src/pages/user/jobDetails.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { 
-  FiChevronLeft, 
-  FiMapPin, 
-  FiBriefcase, 
-  FiClock, 
-  FiDollarSign, 
-  FiShare2, 
+import {
+  FiChevronLeft,
+  FiMapPin,
+  FiBriefcase,
+  FiClock,
+  FiDollarSign,
+  FiShare2,
   FiMail,
   FiArrowRight,
   FiCalendar,
   FiAlertCircle
 } from "react-icons/fi";
 import { BiLoaderAlt } from "react-icons/bi";
-import api from '../../api/axios'; 
+import api from '../../api/axios';
 
 const JobDetailsPage = () => {
   const navigate = useNavigate();
-  const { id } = useParams(); 
-  
+  const { id } = useParams();
+
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,8 +38,7 @@ const JobDetailsPage = () => {
       } catch (err) {
         setError(err.message);
         console.error(err);
-        // Fallback for demo purposes if backend isn't running
-        setJob(mockJobData); 
+        setJob(null);
       } finally {
         setLoading(false);
       }
@@ -108,7 +107,7 @@ const JobDetailsPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center font-popins">
         <FiAlertCircle className="text-red-500 mb-4" size={40} />
-        <h2 className="text-xl font-bold text-gray-900">Job not found</h2>
+        <h2 className="text-xl font-bold text-gray-900">Unable to load this vacancy</h2><p role="alert" className="mt-3 text-gray-500">{error || "Job not found"}</p>
         <button onClick={() => navigate('/')} className="mt-4 text-blue-600 font-bold hover:underline">
           Return to Home
         </button>
@@ -116,22 +115,22 @@ const JobDetailsPage = () => {
     );
   }
 
-  const isExpired = new Date(job.deadline) < new Date();
+  const isExpired = new Date(job.deadline) <= new Date();
   const canApply = job.isAvailable && !isExpired;
 
   return (
     <div className="mt-15 min-h-screen bg-gray-50 font-popins pb-20">
-      
+
       {/* --- HEADER --- */}
       <div className="bg-white border-b border-gray-100 py-8 shadow-sm">
         <div className="container mx-auto px-6">
-          <button 
+          <button
             onClick={() => navigate('/home/')}
             className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors mb-6"
           >
             <FiChevronLeft /> Back to Job Board
           </button>
-          
+
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900">{job.jobRole}</h1>
@@ -146,17 +145,17 @@ const JobDetailsPage = () => {
             </div>
 
             <div className="flex gap-3">
-              <button 
-                onClick={handleShare} 
-                className="p-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all" 
+              <button
+                onClick={handleShare}
+                className="p-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all"
                 title="Share"
               >
                 <FiShare2 size={20} />
               </button>
-              
+
               {canApply ? (
-                <button 
-                  onClick={() => navigate('/home/apply', { state: { jobTitle: job.jobRole, jobId: job.jobId } })}
+                <button
+                  onClick={() => navigate('/home/apply', { state: { jobTitle: job.jobRole, jobId: job.jobId, category: job.category } })}
                   className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2"
                 >
                   Apply Now <FiArrowRight />
@@ -173,11 +172,11 @@ const JobDetailsPage = () => {
 
       <main className="container mx-auto px-6 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* --- MAIN CONTENT (Left) --- */}
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-gray-100 shadow-xl shadow-gray-200/50">
-              
+
               {/* Description */}
               <section className="mb-10">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -214,9 +213,9 @@ const JobDetailsPage = () => {
           <aside className="space-y-6">
             <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-xl shadow-gray-200/50 sticky top-8">
               <h3 className="text-lg font-bold text-gray-900 mb-6 border-b border-gray-50 pb-4">Job Overview</h3>
-              
+
               <div className="space-y-6">
-                
+
                 {/* Location */}
                 <div className="flex gap-4 items-start">
                   <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
@@ -288,23 +287,6 @@ const JobDetailsPage = () => {
       </main>
     </div>
   );
-};
-
-// Fallback data just in case fetch fails while you test
-const mockJobData = {
-  jobId: "JOB-001",
-  jobRole: "UX/UI Designer (Mock Data)",
-  location: "Main Campus, Building A",
-  faculty: "Faculty of Computing",
-  department: "IT Services",
-  jobDescription: "This is a fallback view because the backend connection failed. The role involves creating user-centered designs.",
-  jobResponsibilities: "Conduct user research\nCreate wireframes and prototypes\nCollaborate with developers",
-  jobQualifications: "BSc in Design or CS\nProficiency in Figma\n3 years experience",
-  postDate: new Date().toISOString(),
-  deadline: new Date(Date.now() + 864000000).toISOString(), // 10 days from now
-  jobType: "Full-time",
-  salary: 150000,
-  isAvailable: true
 };
 
 export default JobDetailsPage;

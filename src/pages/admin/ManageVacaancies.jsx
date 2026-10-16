@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Edit2, Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import VacancyModal from '../../components/admin/VacancyMOdal';
-import api from '../../api/axios'; 
+import api from '../../api/axios';
 import { toast } from 'react-hot-toast';
 
 const ManageVacancies = () => {
-  const [allVacancies, setAllVacancies] = useState([]); 
-  const [filteredVacancies, setFilteredVacancies] = useState([]); 
-  const [displayVacancies, setDisplayVacancies] = useState([]); 
+  const [allVacancies, setAllVacancies] = useState([]);
+  const [filteredVacancies, setFilteredVacancies] = useState([]);
+  const [displayVacancies, setDisplayVacancies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
@@ -19,18 +19,18 @@ const ManageVacancies = () => {
 
   // --- 1. Fetch Logic (Using relative path only) ---
   const fetchAllVacancies = async (showLoading = true) => {
-    if (showLoading) setLoading(true); 
+    if (showLoading) setLoading(true);
     try {
       // ✅ Fixed: Used relative path since baseURL is in api.js
       const response = await api.get('/api/jobs');
       let vacancies = Array.isArray(response.data) ? response.data : [];
-      
+
       vacancies.sort((a, b) => (a.isAvailable !== b.isAvailable ? (a.isAvailable ? -1 : 1) : new Date(b.updatedAt) - new Date(a.updatedAt)));
       setAllVacancies(vacancies);
-    } catch (error) { 
-      console.error("Fetch Error:", error.response?.data || error.message); 
-    } finally { 
-      if (showLoading) setLoading(false); 
+    } catch (error) {
+      console.error("Fetch Error:", error.response?.data || error.message);
+    } finally {
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -59,7 +59,7 @@ const ManageVacancies = () => {
         toast?.success("Job updated successfully");
       } else {
         // ✅ Fixed: Used relative path
-        await api.post(`/api/jobs`, formData); 
+        await api.post(`/api/jobs`, formData);
         toast?.success("Job created successfully");
       }
       setIsModalOpen(false);
@@ -75,14 +75,14 @@ const ManageVacancies = () => {
   const toggleStatus = async (e, jobId, currentStatus) => {
     e.stopPropagation();
     const newStatus = !currentStatus;
-    
+
     // Optimistic UI update
     setAllVacancies(prev => prev.map(j => j.jobId === jobId ? { ...j, isAvailable: newStatus } : j));
-    
-    try { 
+
+    try {
       // ✅ Fixed: Used relative path
-      await api.patch(`/api/jobs/${jobId}`, { isAvailable: newStatus }); 
-    } catch (error) { 
+      await api.patch(`/api/jobs/${jobId}`, { isAvailable: newStatus });
+    } catch (error) {
       console.error("Toggle Error:", error.response?.data || error.message);
       fetchAllVacancies(false); // Revert on failure
     }
@@ -107,6 +107,7 @@ const ManageVacancies = () => {
         </div>
       </div>
 
+      {loading && <p role="status" className="text-slate-500 py-4">Loading vacancies…</p>}
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[900px]">
@@ -126,7 +127,7 @@ const ManageVacancies = () => {
                   <td className="p-5"><div>{v.jobRole}</div><div className="text-xs text-gray-400">#{v.jobId}</div></td>
                   <td className="p-5"><div className="text-sm font-medium">{v.faculty}</div><div className="text-xs text-gray-500">{v.department}</div></td>
                   <td className="p-5"><span className={`px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700`}>{v.jobType}</span></td>
-                  <td className="p-5 text-sm">{v.deadline ? v.deadline.split('T')[0] : 'N/A'}</td>
+                  <td className="p-5 text-sm">{v.deadline ? new Date(v.deadline).toLocaleString() : 'N/A'}</td>
                   <td className="p-5 text-center"><button onClick={(e) => toggleStatus(e, v.jobId, v.isAvailable)} className={`px-3 py-1 rounded-full text-xs font-medium border w-20 ${v.isAvailable ? 'bg-green-50 text-green-700' : 'bg-gray-50'}`}>{v.isAvailable ? 'Active' : 'Hidden'}</button></td>
                   <td className="p-5 text-center"><button onClick={(e) => { e.stopPropagation(); setEditingVacancy(v); setIsViewMode(false); setIsModalOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600"><Edit2 size={18} /></button></td>
                 </tr>
@@ -142,7 +143,7 @@ const ManageVacancies = () => {
           </div>
         </div>
       </div>
-      <VacancyModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleCreateOrUpdate} editingVacancy={editingVacancy} isViewMode={isViewMode} />
+      <VacancyModal key={`${editingVacancy?._id || "new"}-${isModalOpen}`} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleCreateOrUpdate} editingVacancy={editingVacancy} isViewMode={isViewMode} />
     </div>
   );
 };

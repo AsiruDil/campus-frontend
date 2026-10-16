@@ -1,11 +1,11 @@
 import { Link, useNavigate } from "react-router-dom"
-import { useEffect, useState, useRef } from "react" 
+import { useEffect, useState, useRef } from "react"
 import Modal from "react-modal"
 import { IoMdNotificationsOutline } from "react-icons/io"
-import { FiMenu, FiLogOut, FiSave, FiX, FiCamera } from "react-icons/fi" 
+import { FiMenu, FiLogOut, FiSave, FiX, FiCamera } from "react-icons/fi"
 import { supabase } from "../util/supabase"
 
-import api from "../api/axios" 
+import api from "../api/axios"
 import toast from "react-hot-toast"
 import { jwtDecode } from "jwt-decode"
 
@@ -20,13 +20,13 @@ export default function HeaderUser() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
   const notifRef = useRef(null);
 
   const handleNotifClick = () => {
     setIsNotifOpen(!isNotifOpen);
     if (!isNotifOpen) {
-      setUnreadCount(0); 
+      setUnreadCount(0);
     }
   };
 
@@ -36,7 +36,7 @@ export default function HeaderUser() {
         setIsNotifOpen(false);
       }
     }
- 
+
     if (isNotifOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
@@ -47,21 +47,21 @@ export default function HeaderUser() {
 
   const fileInputRef = useRef(null)
   const [profileImage, setProfileImage] = useState("profile.png")
-  const [selectedFile, setSelectedFile] = useState(null) 
+  const [selectedFile, setSelectedFile] = useState(null)
   const [previewImage, setPreviewImage] = useState(null)
-  const [isLoading, setIsloading] = useState(true)
-  
+  const [, setIsloading] = useState(true)
+
   const [userData, setUserData] = useState({
     name: "", email: "", idNumber: "", age: "", sex: "", birthday: ""
   })
 
   const token = localStorage.getItem("token");
-  
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         if (!token) { setIsloading(false); return; }
-        const decoded = jwtDecode(token); 
+        const decoded = jwtDecode(token);
         const userName = decoded.userName;
         const userEmail = decoded.email;
 
@@ -79,13 +79,13 @@ export default function HeaderUser() {
 
         if (notifRes.data) {
           setNotifications(notifRes.data);
-          setUnreadCount(notifRes.data.length); 
+          setUnreadCount(notifRes.data.length);
         }
         setIsloading(false);
-      } catch (error) { 
-        console.error("Error fetching data:", error); 
-      } finally { 
-        setIsloading(false); 
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsloading(false);
       }
     };
     fetchUserData();
@@ -96,7 +96,7 @@ export default function HeaderUser() {
     let age = ""; let sex = ""; let birthday = "";
     if (nic.length === 10 || nic.length === 12) {
       let year = ""; let dayText = 0;
-      if (nic.length === 10) { year = "19" + nic.substr(0, 2); dayText = parseInt(nic.substr(2, 3)); } 
+      if (nic.length === 10) { year = "19" + nic.substr(0, 2); dayText = parseInt(nic.substr(2, 3)); }
       else { year = nic.substr(0, 4); dayText = parseInt(nic.substr(4, 3)); }
       if (dayText > 500) { sex = "Female"; dayText -= 500; } else { sex = "Male"; }
       dayText -= 1;
@@ -114,7 +114,7 @@ export default function HeaderUser() {
 
   async function handleSave() {
     try {
-      let finalImageUrl = profileImage 
+      let finalImageUrl = profileImage
       if (selectedFile) {
         const fileExt = selectedFile.name.split(".").pop();
         const fileName = `${Date.now()}.${fileExt}`;
@@ -128,8 +128,8 @@ export default function HeaderUser() {
       await api.put(`/api/users/${userData.name}`, updateUser);
       setProfileImage(finalImageUrl); setPreviewImage(null); setIsModalOpen(false);
       toast.success("Profile updated successfully ✅");
-    } catch (error) { 
-      toast.error("Failed to update profile ❌"); 
+    } catch {
+      toast.error("Failed to update profile ❌");
     }
   }
 
@@ -138,7 +138,7 @@ export default function HeaderUser() {
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
-        className="md:max-w-2xl lg:w-[30%] lg:mr-45 md:mr-20 sm:w-[50%] md:w-[50%] mx-auto mt-20 bg-primary rounded-2xl shadow-2xl outline-none font-popins overflow-hidden relative z-[60]" 
+        className="md:max-w-2xl lg:w-[30%] lg:mr-45 md:mr-20 sm:w-[50%] md:w-[50%] mx-auto mt-20 bg-primary rounded-2xl shadow-2xl outline-none font-popins overflow-hidden relative z-[60]"
         overlayClassName="fixed inset-0 bg-black/60 flex justify-end items-start z-[60]"
       >
         <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 z-20 text-gray-500 hover:text-red-500 bg-white/50 hover:bg-white rounded-full p-2 transition">
@@ -149,7 +149,7 @@ export default function HeaderUser() {
           <div className="h-15 "></div>
           <div className="px-6 pb-6 md:px-8">
             <div className="relative -mt-12 mb-4 flex justify-center items-center">
-              <div className="relative group"> 
+              <div className="relative group">
                 <div className="border-4 border-accent rounded-full bg-white p-1 shadow-md">
                   <img src={previewImage || profileImage} className="w-[80px] h-[80px] rounded-full object-cover" alt="Profile" />
                 </div>
@@ -205,7 +205,7 @@ export default function HeaderUser() {
 
       <header className="w-full fixed top-0 left-0 z-50 bg-white shadow-lg font-popins">
         <div className="max-w-7xl mx-auto h-[80px] flex items-center justify-between px-4 relative">
-          
+
           <div className="flex md:hidden order-1">
             {/* Opens the drawer */}
             <button onClick={() => setIsOpen(true)} className="text-2xl text-black p-2 -ml-2"><FiMenu /></button>
@@ -274,7 +274,7 @@ export default function HeaderUser() {
       {/* --- MOBILE DRAWER IMPLEMENTATION --- */}
       {/* Background Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-[60] md:hidden backdrop-blur-sm"
           onClick={() => setIsOpen(false)}
         />
@@ -286,16 +286,16 @@ export default function HeaderUser() {
           <span className="font-bold text-lg">Menu</span>
           <button onClick={() => setIsOpen(false)} className="text-2xl text-gray-400"><FiX /></button>
         </div>
-        
+
         <div className="flex flex-col gap-2 p-6 font-medium">
           <Link to="/home" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50">Home</Link>
           <Link to="/home/about" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50">About Us</Link>
           <Link to="/home/contact" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50">Contact Us</Link>
           {/* <Link to="/home/contact" onClick={() => setIsOpen(false)} className="p-4 rounded-xl hover:bg-gray-50 text-green-500">My Applications</Link> */}
-          
+
           <div className="mt-auto pt-6">
-             <button 
-              onClick={() => { localStorage.removeItem("token"); navigate("/"); }} 
+             <button
+              onClick={() => { localStorage.removeItem("token"); navigate("/"); }}
               className="w-full flex items-center justify-center gap-3 bg-red-50 text-red-500 py-4 rounded-xl font-bold"
             >
               <FiLogOut /> Logout

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, MapPin, Building2, Calendar, DollarSign, Briefcase, GraduationCap, FileText } from 'lucide-react';
 
 const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = false }) => {
   const initialData = {
     jobRole: '',
-    location: 'Main Campus', 
-    faculty: 'Science',      
+    category: '',
+    location: 'Main Campus',
+    faculty: 'Science',
     department: '',
     jobDescription: '',
     jobResponsibilities: '',
@@ -16,21 +17,13 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
     isAvailable: true
   };
 
-  const [formData, setFormData] = useState(initialData);
-
-  // Get today's date in YYYY-MM-DD format to prevent past dates
-  const today = new Date().toISOString().split('T')[0];
-
-  useEffect(() => {
-    if (editingVacancy) {
-      setFormData({
-        ...editingVacancy,
-        deadline: editingVacancy.deadline ? new Date(editingVacancy.deadline).toISOString().split('T')[0] : ''
-      });
-    } else {
-      setFormData(initialData);
-    }
-  }, [editingVacancy, isOpen]);
+  const toLocalDateTime = value => {
+    if (!value) return '';
+    const date = new Date(value);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
+  const [formData, setFormData] = useState(() => editingVacancy ? { ...initialData, ...editingVacancy, deadline: toLocalDateTime(editingVacancy.deadline) } : initialData);
+  const today = toLocalDateTime(new Date());
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,13 +32,14 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    const submissionData = { 
-        ...formData, 
+
+    const submissionData = {
+        ...formData,
         jobId: editingVacancy ? editingVacancy.jobId : `JOB-${Date.now()}`,
-        salary: Number(formData.salary) 
+        salary: Number(formData.salary),
+        deadline: new Date(formData.deadline).toISOString()
     };
-    
+
     onSubmit(submissionData);
   };
 
@@ -57,13 +51,13 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
       <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm">
         <div className="flex min-h-full items-center justify-center p-4">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
-            
+
             {/* Header Banner */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white relative">
               <button onClick={onClose} className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 p-1 rounded-full transition-colors">
                 <X size={24} />
               </button>
-              
+
               <div className="flex flex-col gap-2 mt-2">
                 <div className="flex items-center gap-3">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${formData.isAvailable ? 'bg-green-400 text-green-900' : 'bg-red-400 text-red-900'}`}>
@@ -91,7 +85,7 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                   <div className="text-gray-500 text-xs uppercase font-semibold mb-1 flex items-center gap-1"><Calendar size={14} /> Deadline</div>
-                  <div className="font-semibold text-red-600">{formData.deadline || 'No Deadline'}</div>
+                  <div className="font-semibold text-red-600">{formData.deadline ? new Date(formData.deadline).toLocaleString() : 'No Deadline'}</div>
                 </div>
               </div>
 
@@ -117,10 +111,10 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm">
       <div className="flex min-h-full items-center justify-center p-4">
-        
+
         {/* Modal Card */}
         <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl my-8 animate-in fade-in zoom-in-95 duration-200">
-          
+
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white rounded-t-xl z-10">
             <h2 className="text-xl font-bold text-gray-800">
@@ -133,16 +127,17 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
 
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              
+
               <InputGroup label="Job Role" name="jobRole" value={formData.jobRole} onChange={handleChange} required />
-              
+
+              <div><label htmlFor="vacancy-category" className="block text-sm font-semibold text-gray-700 mb-1.5">Position category</label><select id="vacancy-category" name="category" value={formData.category} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg p-2.5"><option value="">Choose category</option><option value="lecturer">Lecturer</option><option value="probationary">Probationary lecturer</option><option value="demo">Demonstrator</option></select></div>
               {/* LOCATION DROPDOWN */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Location</label>
-                <select 
-                    name="location" 
-                    value={formData.location} 
-                    onChange={handleChange} 
+                <select
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
                     className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
                 >
                     <option value="Main Campus">Main Campus</option>
@@ -155,10 +150,10 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
               {/* FACULTY DROPDOWN */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Faculty</label>
-                <select 
-                    name="faculty" 
-                    value={formData.faculty} 
-                    onChange={handleChange} 
+                <select
+                    name="faculty"
+                    value={formData.faculty}
+                    onChange={handleChange}
                     className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
                 >
                     <option value="Science">Science</option>
@@ -173,7 +168,7 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
               </div>
 
               <InputGroup label="Department" name="department" value={formData.department} onChange={handleChange} required />
-              
+
              <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Job Type</label>
               <select name="jobType" value={formData.jobType} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
@@ -197,13 +192,13 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
             </div>
 
             {/* DEADLINE INPUT WITH MIN DATE */}
-            <InputGroup 
-                label="Deadline" 
-                name="deadline" 
-                type="date" 
-                value={formData.deadline} 
-                onChange={handleChange} 
-                required 
+            <InputGroup
+                label="Application deadline (your local time)"
+                name="deadline"
+                type="datetime-local"
+                value={formData.deadline}
+                onChange={handleChange}
+                required
                 min={today} // <-- Prevents past dates!
             />
             </div>
@@ -242,9 +237,10 @@ const Section = ({ title, icon, content }) => (
 // Updated InputGroup to accept 'min'
 const InputGroup = ({ label, name, value, onChange, type = "text", disabled = false, required = false, placeholder, min }) => (
   <div>
-    <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+    <label htmlFor={`vacancy-${name}`} className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
     <input
       type={type}
+      id={`vacancy-${name}`}
       name={name}
       value={value}
       onChange={onChange}
@@ -259,8 +255,9 @@ const InputGroup = ({ label, name, value, onChange, type = "text", disabled = fa
 
 const TextAreaGroup = ({ label, name, value, onChange }) => (
   <div>
-    <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+    <label htmlFor={`vacancy-${name}`} className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
     <textarea
+      id={`vacancy-${name}`}
       name={name}
       value={value}
       onChange={onChange}

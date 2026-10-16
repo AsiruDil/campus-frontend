@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "../../components/admin/Layout";
 
 import ManageVacancies from "./ManageVacaancies";
+import ApplicationReview from "../../components/review/ApplicationReview";
 import ManageUsers from "./ManageUsers";
 
 
@@ -16,7 +17,8 @@ export default function AdminPage() {
           {/* ✅ RELATIVE paths */}
           <Route path="users" element={<ManageUsers />} />
           <Route path="vacancies" element={<ManageVacancies />} />
-         
+          <Route path="applications" element={<ApplicationReview />} />
+
         </Route>
       </Routes>
     </div>

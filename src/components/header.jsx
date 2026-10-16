@@ -1,3 +1,4 @@
+import { roleHome } from '../util/roles';
 import { Link, useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import Modal from "react-modal"
@@ -24,39 +25,13 @@ export default function Header({
     lastName: "",
     username: "",
     email: "",
-    loginId: "", 
+    loginId: "",
     password: "",
     confirmPassword: "",
-    otp: "" 
+    otp: ""
   })
 
-  // ✅ NEW: Effect to handle Google Auth Token from URL
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
-    const type = urlParams.get("type");
-
-    if (token) {
-      // Save the token correctly in Local Storage
-      localStorage.setItem("token", token);
-      toast.success("Login successful with Google");
-
-      // Clean the URL by removing the token from the address bar
-      window.history.replaceState({}, document.title, "/");
-
-      // Redirect based on user role
-      if (type === "admin") navigate("/admin");
-      else if (type === "madam") navigate("/madam");
-      else navigate("/home");
-      
-      setIsModalOpen(false);
-    }
-  }, [navigate, setIsModalOpen]);
-
-  useEffect(() => {
-    setIsForgotPassword(false)
-    setIsVerifyEmail(false)
-  }, [isModalOpen, isLogin])
+  const resetAuthSteps = () => { setIsForgotPassword(false); setIsVerifyEmail(false); };
 
   useEffect(() => {
     const handleResize = () => {
@@ -91,9 +66,8 @@ export default function Header({
       const res = await axios.post(import.meta.env.VITE_BACKEND_URL + "/api/users/login", { password: form.password, email: form.loginId, userName: form.loginId })
       toast.success("Login successful");
       localStorage.setItem("token", res.data.token);
-      if (res.data.type == "admin") navigate("/admin");
-      else if (res.data.type == "madam") navigate('/madam');
-      else navigate('/home');
+      localStorage.setItem("userType", res.data.type);
+      navigate(roleHome(res.data.type));
       setIsModalOpen(false);
     } catch (e) { toast.error(e.response?.data?.message || "Login failed"); }
   }
@@ -104,7 +78,7 @@ export default function Header({
     try {
       await axios.post(import.meta.env.VITE_BACKEND_URL + "/api/users/", { firstName: form.firstName, lastName: form.lastName, userName: form.username, email: form.email, password: form.password })
       toast.success("Registration successful. Please verify your email.");
-      setVerificationType("register"); setIsVerifyEmail(true); 
+      setVerificationType("register"); setIsVerifyEmail(true);
     } catch (e) { toast.error(e.response?.data?.message || "Registration failed"); }
   }
 
@@ -137,12 +111,12 @@ export default function Header({
     <>
       <Modal
         isOpen={isModalOpen}
-        onRequestClose={() => setIsModalOpen(false)}
+        onRequestClose={() => { setIsModalOpen(false); resetAuthSteps(); }}
         className="max-w-md w-[95%] mx-auto bg-white rounded-3xl shadow-2xl outline-none overflow-hidden max-h-[90vh] flex flex-col relative z-[100]"
         overlayClassName="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-[99]"
       >
         <div className="p-6 md:p-10 font-popins overflow-y-auto scrollbar-hide w-full">
-          <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-black">✕</button>
+          <button onClick={() => { setIsModalOpen(false); resetAuthSteps(); }} className="absolute top-4 right-4 text-gray-400 hover:text-black">✕</button>
 
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800">
@@ -204,12 +178,12 @@ export default function Header({
                   </>
                 )}
                 {isLogin && <input name="loginId" placeholder="Username or Email" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />}
-                
+
                 {!isLogin && form.password && <p className={`text-xs font-bold ${strength.color} mb-[-12px] ml-1`}>Strength: {strength.label}</p>}
                 <input type="password" name="password" placeholder="Password" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
-                
+
                 {!isLogin && <input type="password" name="confirmPassword" placeholder="Confirm Password" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />}
-                
+
                 {isLogin && (
                   <div className="flex justify-end w-full">
                     <span onClick={() => setIsForgotPassword(true)} className="text-xs text-accent font-bold cursor-pointer hover:underline">Forgot Password?</span>
@@ -223,7 +197,7 @@ export default function Header({
           {!isVerifyEmail && !isForgotPassword && (
             <p className="text-center mt-8 text-sm text-gray-400">
               {isLogin ? "Don't have an account?" : "Already have an account?"}
-              <span onClick={() => setIsLogin(!isLogin)} className="text-accent font-bold cursor-pointer ml-1 hover:underline underline-offset-4">{isLogin ? "Register" : "Login"}</span>
+              <span onClick={() => { setIsLogin(!isLogin); resetAuthSteps(); }} className="text-accent font-bold cursor-pointer ml-1 hover:underline underline-offset-4">{isLogin ? "Register" : "Login"}</span>
             </p>
           )}
         </div>
@@ -242,11 +216,11 @@ export default function Header({
             <Link to="/" className="hover:text-accent transition">Home</Link>
             <Link to="/about" className="hover:text-accent transition">About Us</Link>
             <Link to="/contact" className="hover:text-accent transition">Contact Us</Link>
-            <Link onClick={() => { setIsLogin(false); setIsModalOpen(true); }} className="text-green-500 cursor-pointer font-bold">Get Started</Link>
+            <Link onClick={() => { resetAuthSteps(); setIsLogin(false); setIsModalOpen(true); }} className="text-green-500 cursor-pointer font-bold">Get Started</Link>
           </nav>
           <div className="hidden md:flex gap-3">
-            <button onClick={() => { setIsLogin(true); setIsModalOpen(true); }} className="px-6 py-2.5 rounded-full border border-accent text-accent font-bold hover:bg-accent hover:text-white transition">Login</button>
-            <button onClick={() => { setIsLogin(false); setIsModalOpen(true); }} className="px-6 py-2.5 rounded-full bg-accent text-white font-bold hover:shadow-lg transition active:scale-95">Register</button>
+            <button onClick={() => { resetAuthSteps(); setIsLogin(true); setIsModalOpen(true); }} className="px-6 py-2.5 rounded-full border border-accent text-accent font-bold hover:bg-accent hover:text-white transition">Login</button>
+            <button onClick={() => { resetAuthSteps(); setIsLogin(false); setIsModalOpen(true); }} className="px-6 py-2.5 rounded-full bg-accent text-white font-bold hover:shadow-lg transition active:scale-95">Register</button>
           </div>
           <button onClick={() => setIsDrawerOpen(true)} className="md:hidden flex flex-col gap-1.5 p-2">
             <span className="h-[2.5px] w-6 bg-gray-800 rounded-full" />
@@ -267,8 +241,8 @@ export default function Header({
           <Link to="/about" onClick={() => setIsDrawerOpen(false)} className="p-4 rounded-xl hover:bg-gray-50 font-medium">About Us</Link>
           <Link to="/contact" onClick={() => setIsDrawerOpen(false)} className="p-4 rounded-xl hover:bg-gray-50 font-medium">Contact Us</Link>
           <div className="flex flex-col gap-3 mt-6">
-            <button onClick={() => { setIsLogin(true); setIsModalOpen(true); setIsDrawerOpen(false); }} className="w-full py-3.5 rounded-2xl border border-accent text-accent font-bold">Login</button>
-            <button onClick={() => { setIsLogin(false); setIsModalOpen(true); setIsDrawerOpen(false); }} className="w-full py-3.5 rounded-2xl bg-accent text-white font-bold">Register</button>
+            <button onClick={() => { resetAuthSteps(); setIsLogin(true); setIsModalOpen(true); setIsDrawerOpen(false); }} className="w-full py-3.5 rounded-2xl border border-accent text-accent font-bold">Login</button>
+            <button onClick={() => { resetAuthSteps(); setIsLogin(false); setIsModalOpen(true); setIsDrawerOpen(false); }} className="w-full py-3.5 rounded-2xl bg-accent text-white font-bold">Register</button>
           </div>
         </div>
       </aside>

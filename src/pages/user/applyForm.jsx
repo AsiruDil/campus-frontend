@@ -1,239 +1,300 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { FiChevronLeft, FiUploadCloud, FiCheckCircle, FiSend, FiAlertCircle } from "react-icons/fi";
-import { BiLoaderAlt } from "react-icons/bi";
-import { supabase } from "../../util/supabase"
+import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import axios from 'axios';
-import toast, { Toaster } from 'react-hot-toast';
+import {
+  FiArrowLeft,
+  FiCheckCircle,
+  FiFileText,
+  FiUploadCloud,
+} from "react-icons/fi";
+import toast from "react-hot-toast";
+import api from "../../api/axios";
 
-// Supabase Configuration
+const MAX_CV = 2 * 1024 * 1024;
+const MAX_SUPPORT = 5 * 1024 * 1024;
+const categories = [
+  ["lecturer", "Lecturer"],
+  ["probationary", "Probationary lecturer"],
+  ["demo", "Demonstrator"],
+];
+const fieldClass =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500";
 
-const ApplyForm = () => {
+export default function ApplyForm() {
   const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Received from: navigate('/home/apply', { state: { jobTitle: job.jobRole, jobId: job.jobId } })
-  const { jobId, jobTitle } = location.state || {};
-
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    mobileNumber: '',
+  const { state } = useLocation();
+  const { jobId, jobTitle } = state || {};
+  const [profile] = useState(() => {
+    try {
+      return jwtDecode(localStorage.getItem("token"));
+    } catch {
+      return {};
+    }
   });
+  const [nic, setNic] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [category, setCategory] = useState(state?.category || "");
+  const [cv, setCv] = useState(null);
+  const [supporting, setSupporting] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
-  const [cvFile, setCvFile] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  
-  // State for extracted token data
-  const [userName, setUserName] = useState('');
-
-  useEffect(() => {
-    if (!jobId) {
-      toast.error("No job selected. Redirecting...");
-      setTimeout(() => navigate('/'), 3000);
+  function chooseCV(event) {
+    const file = event.target.files[0];
+    if (
+      file &&
+      (!file.name.toLowerCase().endsWith(".pdf") ||
+        file.size > MAX_CV ||
+        !file.size)
+    ) {
+      setError("Choose a PDF CV no larger than 2 MB.");
+      setCv(null);
+      event.target.value = "";
       return;
     }
-
-    const token = localStorage.getItem('token'); 
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        
-        // 1. Get Username
-        setUserName(decoded.userName || decoded.username || decoded.name || '');
-
-        // 2. Auto-fill Form
-        setFormData(prev => ({
-          ...prev,
-          firstName: decoded.firstName || '',
-          lastName: decoded.lastName || '',
-          email: decoded.email || '',
-        }));
-
-      } catch (err) {
-        console.error(err);
-        toast.error("Session expired. Please log in again.");
-      }
-    } else {
-      toast.error("Please log in to apply.");
-    }
-  }, [jobId, navigate]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setCvFile(e.target.files[0]);
-      toast.success(`Selected: ${e.target.files[0].name}`);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      return toast.error("User not authenticated.");
-    }
-
-    setIsSubmitting(true);
-    const loadingToast = toast.loading("Uploading CV...");
-
-    try {
-      // 1. Upload CV to Supabase Bucket "cv"
-      const fileExt = cvFile.name.split('.').pop();
-      // REMOVED userId from filename, using timestamp for uniqueness
-      const fileName = `${Date.now()}.${fileExt}`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('cv')
-        .upload(fileName, cvFile);
-
-      if (uploadError) throw new Error("CV upload failed.");
-
-      // 2. Get Public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('cv')
-        .getPublicUrl(fileName);
-
-      toast.loading("Submitting application...", { id: loadingToast });
-
-      // 3. Post to Backend
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/apply/`, 
-        {
-          jobId: jobId,
-          cv: publicUrl, 
-          mobileNumber: formData.mobileNumber,
-          userName: userName || `${formData.firstName} ${formData.lastName}`,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-        }, 
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      toast.success("Application submitted successfully!", { id: loadingToast });
-      setIsSubmitted(true);
-      
-    } catch (err) {
-      console.error(err);
-      const message = err.response?.data?.message || err.message || "Something went wrong";
-      toast.error(message, { id: loadingToast });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (isSubmitted) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 font-popins">
-        <Toaster />
-        <div className="max-w-md w-full bg-white p-10 rounded-[2.5rem] shadow-2xl border border-white text-center">
-          <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <FiCheckCircle size={48} />
-          </div>
-          <h2 className="text-2xl font-extrabold text-gray-900">All Set!</h2>
-          <p className="text-gray-500 mt-3 mb-8 font-medium">
-            Your application for <b>{jobTitle}</b> has been sent.
-          </p>
-          <button onClick={() => navigate('/home/')} className="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl hover:bg-black transition-all">
-            Back to Home
-          </button>
-        </div>
-      </div>
-    );
+    setCv(file || null);
+    setError("");
   }
-
-  return (
-    <div className="min-h-screen bg-gray-50 pt-12 pb-20 font-popins">
-      <Toaster position="top-center" reverseOrder={false} />
-      <main className="max-w-2xl mx-auto px-6">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-blue-600 mb-8 transition-colors">
-          <FiChevronLeft size={18} /> Back
+  function chooseSupporting(event) {
+    const files = Array.from(event.target.files);
+    if (
+      files.length > 10 ||
+      files.some(
+        (file) =>
+          !/\.(pdf|png|jpe?g)$/i.test(file.name) ||
+          !file.size ||
+          file.size > MAX_SUPPORT,
+      )
+    ) {
+      setError(
+        "Choose up to 10 PDF, PNG or JPEG documents, each no larger than 5 MB.",
+      );
+      event.target.value = "";
+      setSupporting([]);
+      return;
+    }
+    setSupporting(files);
+    setError("");
+  }
+  async function submit(event) {
+    event.preventDefault();
+    if (!cv) return setError("Please select your CV.");
+    if (!/^(\d{9}[VX]|\d{12})$/i.test(nic.trim()))
+      return setError("Enter a valid NIC: 9 digits and V/X, or 12 digits.");
+    setBusy(true);
+    setError("");
+    const data = new FormData();
+    data.append("jobId", jobId);
+    data.append("nic", nic.trim().toUpperCase());
+    data.append("mobileNumber", mobile);
+    data.append("category", category);
+    data.append("cv", cv);
+    supporting.forEach((file) => data.append("supporting", file));
+    try {
+      await api.post("/api/apply/", data);
+      setSubmitted(true);
+      toast.success("Application submitted successfully.");
+    } catch (failure) {
+      setError(
+        failure.response?.data?.message ||
+          "Could not submit your application. Please try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (!jobId)
+    return (
+      <main className="max-w-xl mx-auto p-10">
+        <h1 className="text-2xl font-bold">Choose a vacancy first</h1>
+        <p className="my-4">
+          Your application needs a position. Browse the available vacancies to
+          continue.
+        </p>
+        <button
+          className="bg-blue-600 text-white px-5 py-3 rounded-xl"
+          onClick={() => navigate("/home")}
+        >
+          Browse vacancies
         </button>
-
-        <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 overflow-hidden border border-white">
-          <div className="bg-blue-600 p-10 text-white">
-            <h1 className="text-3xl font-extrabold">Apply Now</h1>
-            <p className="text-blue-100 mt-1 font-medium italic">Position: {jobTitle || "Loading..."}</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-10 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">First Name</label>
-                <input
-                  name="firstName" required value={formData.firstName}
-                  onChange={handleInputChange} type="text"
-                  className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none transition-all font-medium"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Last Name</label>
-                <input
-                  name="lastName" required value={formData.lastName}
-                  onChange={handleInputChange} type="text"
-                  className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none transition-all font-medium"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
-              <input
-                name="email" required value={formData.email}
-                onChange={handleInputChange} type="email"
-                className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none transition-all font-medium"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Mobile</label>
-              <input
-                name="mobileNumber" required value={formData.mobileNumber}
-                onChange={handleInputChange} type="tel"
-                placeholder="+94 ..."
-                className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none transition-all font-medium"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">CV (PDF)</label>
-              <div className="relative">
-                <input type="file" id="cv-upload" className="hidden" accept=".pdf" onChange={handleFileChange} required />
-                <label 
-                  htmlFor="cv-upload"
-                  className={`border-2 border-dashed rounded-[2rem] p-10 text-center transition-all cursor-pointer group block ${
-                    cvFile ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30'
-                  }`}
-                >
-                  <FiUploadCloud className={`mx-auto mb-3 ${cvFile ? 'text-green-500' : 'text-gray-300 group-hover:text-blue-500'}`} size={40} />
-                  <p className="text-sm font-bold text-gray-700">{cvFile ? cvFile.name : "Upload your CV"}</p>
+      </main>
+    );
+  if (submitted)
+    return (
+      <main className="max-w-xl mx-auto p-10 text-center">
+        <FiCheckCircle className="text-emerald-600 mx-auto mb-6" size={56} />
+        <h1 className="text-3xl font-bold">Application received</h1>
+        <p className="my-5 text-slate-600">
+          Your application for {jobTitle || jobId}, CV and supporting documents
+          have been submitted together.
+        </p>
+        <button
+          className="bg-blue-600 text-white px-6 py-3 rounded-xl"
+          onClick={() => navigate("/home")}
+        >
+          Back to home
+        </button>
+      </main>
+    );
+  return (
+    <main className="min-h-screen bg-slate-50 py-10 px-4">
+      <div className="max-w-3xl mx-auto">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 mb-6 text-slate-600"
+        >
+          <FiArrowLeft /> Back to vacancy
+        </button>
+        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+          <header className="bg-blue-700 text-white p-7 sm:p-9">
+            <p className="text-blue-100 text-sm mb-2">YOUR NEXT OPPORTUNITY</p>
+            <h1 className="text-3xl font-bold">
+              Apply for {jobTitle || jobId}
+            </h1>
+            <p className="mt-3 text-blue-100">
+              Complete your details and attach your documents in one place.
+            </p>
+          </header>
+          <form
+            onSubmit={submit}
+            className="p-6 sm:p-9 space-y-8"
+            aria-busy={busy}
+          >
+            <section>
+              <h2 className="text-xl font-semibold mb-4">1. Your details</h2>
+              <p className="bg-slate-50 rounded-xl p-4 mb-5 text-slate-600">
+                Applying as{" "}
+                <strong>
+                  {profile.firstName} {profile.lastName}
+                </strong>
+                <br />
+                {profile.email}
+              </p>
+              <div className="grid sm:grid-cols-2 gap-5">
+                <label className="space-y-2">
+                  <span className="block font-medium">
+                    NIC number <span className="text-red-600">*</span>
+                  </span>
+                  <input
+                    className={fieldClass}
+                    value={nic}
+                    onChange={(e) => setNic(e.target.value.toUpperCase())}
+                    required
+                    maxLength={12}
+                    pattern="([0-9]{9}[VvXx]|[0-9]{12})"
+                    placeholder="e.g. 200012345678"
+                    autoComplete="off"
+                  />
+                  <span className="block text-sm text-slate-500">
+                    Enter your own National Identity Card number.
+                  </span>
+                </label>
+                <label className="space-y-2">
+                  <span className="block font-medium">
+                    Mobile number <span className="text-red-600">*</span>
+                  </span>
+                  <input
+                    className={fieldClass}
+                    type="tel"
+                    value={mobile}
+                    onChange={(e) => setMobile(e.target.value)}
+                    required
+                    pattern="[+0-9 ()\-]{7,20}"
+                    autoComplete="tel"
+                    placeholder="+94 …"
+                  />
+                </label>
+                <label className="space-y-2 sm:col-span-2">
+                  <span className="block font-medium">
+                    Position category <span className="text-red-600">*</span>
+                  </span>
+                  <select
+                    className={fieldClass}
+                    required
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                  >
+                    <option value="">Choose the position category</option>
+                    {categories.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="block text-sm text-slate-500">
+                    The vacancy’s category takes precedence when already
+                    assigned.
+                  </span>
                 </label>
               </div>
-            </div>
-
-            <button 
-              type="submit"
-              disabled={isSubmitting || !jobId}
-              className="w-full bg-blue-600 text-white font-extrabold py-5 rounded-2xl hover:bg-blue-700 disabled:bg-gray-400 transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2"
+            </section>
+            <section className="space-y-5">
+              <h2 className="text-xl font-semibold">
+                2. Application documents
+              </h2>
+              <p className="text-slate-500 text-sm">
+                Upload the files below. We automatically package your CV and all
+                supporting documents into a single ZIP. You do not need to
+                create a ZIP yourself.
+              </p>
+              <label className="block border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-2xl p-5">
+                <span className="flex items-center gap-2 font-semibold">
+                  <FiUploadCloud /> CV — PDF, maximum 2 MB *
+                </span>
+                <input
+                  className="mt-4 block w-full text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-blue-100 file:px-4 file:py-2 file:text-blue-800"
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  required
+                  onChange={chooseCV}
+                />
+                {cv && (
+                  <span className="block mt-3 text-sm text-emerald-700">
+                    {cv.name} · {(cv.size / 1024).toFixed(0)} KB
+                  </span>
+                )}
+              </label>
+              <label className="block rounded-2xl border border-slate-200 p-5">
+                <span className="flex items-center gap-2 font-semibold">
+                  <FiFileText /> Certificates & research papers{" "}
+                  <span className="text-slate-400 font-normal">(optional)</span>
+                </span>
+                <span className="block text-sm text-slate-500 mt-2">
+                  Up to 10 files. PDF, PNG or JPEG; maximum 5 MB each.
+                </span>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  className="mt-4 block w-full text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2"
+                  onChange={chooseSupporting}
+                />
+              </label>
+              {supporting.length > 0 && (
+                <ul className="space-y-1 text-sm text-slate-600">
+                  {supporting.map((file, i) => (
+                    <li key={`${file.name}-${i}`}>
+                      {file.name} · {(file.size / 1024).toFixed(0)} KB
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+            {error && (
+              <p role="alert" className="p-4 rounded-xl bg-red-50 text-red-700">
+                {error}
+              </p>
+            )}
+            <button
+              disabled={busy}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-xl py-4 font-semibold"
             >
-              {isSubmitting ? <BiLoaderAlt className="animate-spin" /> : <><FiSend /> Submit Application</>}
+              {busy ? "Uploading and submitting…" : "Submit application"}
             </button>
           </form>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
-};
-
-export default ApplyForm;
+}

@@ -11,9 +11,9 @@ const Layout = () => {
       {/* Mobile Header Toggle */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-50">
         <span className="font-extrabold text-[22px] font-popins text-black ">
-        Admin<span className="text-primary"> </span>Panel
+        Super Admin<span className="text-primary"> </span>Panel
       </span>
-        <button 
+        <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="p-2 text-textDark bg-gray-100 rounded-lg"
         >
@@ -26,7 +26,7 @@ const Layout = () => {
 
       {/* Mobile Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-30 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />

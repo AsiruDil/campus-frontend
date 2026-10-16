@@ -28,7 +28,8 @@ const UserDetailsModal = ({ isOpen, onClose, user }) => {
         {/* Content */}
         <div className="p-6 space-y-4">
           <DetailRow icon={<FiMail />} label="Email" value={user.email} />
-          <DetailRow icon={<FiTarget />} label="Role" value={user.role} isBadge />
+          <DetailRow icon={<FiTarget />} label="Role" value={user.role === "superadmin" ? "Super Admin" : user.role === "admin" ? "Admin" : "User"} isBadge />
+          {user.role === "admin" && <DetailRow icon={<FiTarget />} label="Assigned faculty / department" value={`${user.faculty || "Unassigned"} / ${user.department || "Unassigned"}`} />}
           <DetailRow icon={<FiHash />} label="User ID" value={user.id || 'N/A'} />
           <DetailRow icon={<FiUser />} label="Gender" value={user.gender || 'Not Specified'} />
           <DetailRow icon={<FiCalendar />} label="Birthday" value={user.birthday || 'Not Specified'} />
