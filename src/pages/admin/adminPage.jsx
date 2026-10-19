@@ -4,6 +4,7 @@ import Layout from "../../components/admin/Layout";
 import ManageVacancies from "./ManageVacaancies";
 import ApplicationReview from "../../components/review/ApplicationReview";
 import ManageUsers from "./ManageUsers";
+import ActivityLog from './ActivityLog';
 
 
 export default function AdminPage() {
@@ -18,6 +19,7 @@ export default function AdminPage() {
           <Route path="users" element={<ManageUsers />} />
           <Route path="vacancies" element={<ManageVacancies />} />
           <Route path="applications" element={<ApplicationReview />} />
+          <Route path="activity-logs" element={<ActivityLog />} />
 
         </Route>
       </Routes>

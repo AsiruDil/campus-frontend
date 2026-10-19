@@ -137,6 +137,9 @@ const Sidebar = ({ isMobileOpen, setMobileOpen }) => {
           <div onClick={() => setMobileOpen(false)}>
             <SidebarItem to="/super-admin/applications" icon={FiUsers} label="Applications" isActive={location.pathname.includes('/super-admin/applications')} />
           </div>
+          <div onClick={() => setMobileOpen(false)}>
+            <SidebarItem to="/super-admin/activity-logs" icon={FiUsers} label="Activity Log" isActive={location.pathname.includes('/super-admin/activity-logs')} />
+          </div>
         </nav>
 
         {/* LOGOUT BUTTON AT THE BOTTOM */}
