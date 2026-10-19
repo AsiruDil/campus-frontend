@@ -31,7 +31,7 @@ export default function HomeSerect(){
             </div>
            <div className="w-full h-[100px]">
 
-            <Footer/>
+            <Footer basePath="/home"/>
            </div>
 
 

@@ -10,8 +10,7 @@ npm run dev
 Preserve the existing ignored `.env`, or supply these values in your local environment:
 
 - `VITE_BACKEND_URL`: backend origin, e.g. `http://localhost:3000` (without `/api`).
-- `VITE_SUPABASE_URL`: existing Supabase project URL.
-- `VITE_SUPABASE_KEY`: public anonymous/publishable key for the existing profile-image integration. Never use a service-role key in the frontend.
+New profile uploads use authenticated backend storage; VITE_SUPABASE_URL and VITE_SUPABASE_KEY are no longer required. Existing external photo URLs still display.
 
 The backend README describes MongoDB, email delivery and private document storage configuration.
 
@@ -45,6 +44,10 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium \
 npm run test:e2e
 ```
 
-The four browser tests start their own Vite (5174) and backend (3001) processes and an isolated database. They exercise applicant login/upload, Admin filtering/shortlisting/email/ZIP download/decisions, Super Admin deadline editing/retention, and the mobile review layout. Test email delivery is stubbed; the fixture removes its database and uploaded files afterward. Without `MONGODB_TEST_URL`, the fixture uses checksum-verified MongoDB 8.0.12 via `mongodb-memory-server`.
+The browser tests start their own Vite (5174) and backend (3001) processes and an isolated database. They exercise applicant login/upload, Admin filtering/shortlisting/email/ZIP download/decisions, Super Admin deadline editing/retention, and the mobile review layout. Test email delivery is stubbed; the fixture removes its database and uploaded files afterward. Without `MONGODB_TEST_URL`, the fixture uses checksum-verified MongoDB 8.0.12 via `mongodb-memory-server`.
 
 The build currently emits a bundle-size warning; it still completes successfully. Production MongoDB access, Gmail delivery, Google OAuth and Supabase profile storage need the deployment's real configuration.
+
+## Production hardening (October 2026)
+
+See the workspace `PRODUCTION-READINESS.md` for verified coverage, deployment prerequisites and remaining external-service checks. The backend also contains docs/production-readiness.md and deploy/nginx.conf for deployment review. Both projects have a CI workflow for lint/build or backend integration tests plus dependency audit. Local `.env` files are private; use `.env.example` for documented variable names.

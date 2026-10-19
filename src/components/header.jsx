@@ -1,5 +1,5 @@
 import { roleHome } from '../util/roles';
-import { Link, useNavigate } from "react-router-dom"
+import { Link, NavLink, useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import Modal from "react-modal"
 import toast from "react-hot-toast"
@@ -77,7 +77,7 @@ export default function Header({
     if (form.password !== form.confirmPassword) { toast.error("Passwords do not match"); return; }
     try {
       await axios.post(import.meta.env.VITE_BACKEND_URL + "/api/users/", { firstName: form.firstName, lastName: form.lastName, userName: form.username, email: form.email, password: form.password })
-      toast.success("Registration successful. Please verify your email.");
+      toast.success("OTP sent. Verify your email to complete registration.");
       setVerificationType("register"); setIsVerifyEmail(true);
     } catch (e) { toast.error(e.response?.data?.message || "Registration failed"); }
   }
@@ -112,11 +112,12 @@ export default function Header({
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => { setIsModalOpen(false); resetAuthSteps(); }}
-        className="max-w-md w-[95%] mx-auto bg-white rounded-3xl shadow-2xl outline-none overflow-hidden max-h-[90vh] flex flex-col relative z-[100]"
+        contentLabel={isVerifyEmail ? "Verify your email" : isLogin ? "Login" : "Create account"}
+        className="career-auth max-w-md w-[95%] mx-auto bg-white rounded-3xl shadow-2xl outline-none overflow-hidden max-h-[90vh] flex flex-col relative z-[100]"
         overlayClassName="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 z-[99]"
       >
         <div className="p-6 md:p-10 font-popins overflow-y-auto scrollbar-hide w-full">
-          <button onClick={() => { setIsModalOpen(false); resetAuthSteps(); }} className="absolute top-4 right-4 text-gray-400 hover:text-black">✕</button>
+          <button onClick={() => { setIsModalOpen(false); resetAuthSteps(); }} aria-label="Close dialog" className="absolute top-4 right-4 text-gray-400 hover:text-black">✕</button>
 
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800">
@@ -143,12 +144,12 @@ export default function Header({
           <div className="space-y-4">
             {isVerifyEmail && (
               <>
-                <input name="otp" placeholder="Enter 6-digit OTP" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-center tracking-widest text-lg focus:ring-2 focus:ring-accent/20 outline-none" />
+                <input aria-label="Enter 6-digit OTP" name="otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="Enter 6-digit OTP" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-center tracking-widest text-lg focus:ring-2 focus:ring-accent/20 outline-none" />
                 {verificationType === "reset" && (
                   <div className="space-y-4 mt-4">
                     {form.password && <p className={`text-xs font-bold ${strength.color} mb-[-12px] ml-1`}>Strength: {strength.label}</p>}
-                    <input type="password" name="password" placeholder="New Password" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
-                    <input type="password" name="confirmPassword" placeholder="Confirm Password" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
+                    <input aria-label="New Password" type="password" name="password" placeholder="New Password" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
+                    <input aria-label="Confirm Password" type="password" name="confirmPassword" placeholder="Confirm Password" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
                   </div>
                 )}
                 <button onClick={handleVerifyOtp} className="w-full mt-4 py-4 bg-accent text-white rounded-2xl font-bold hover:shadow-lg transition active:scale-95 shadow-accent/30 shadow-md">
@@ -159,7 +160,7 @@ export default function Header({
 
             {isForgotPassword && !isVerifyEmail && (
               <>
-                <input type="email" name="email" placeholder="Registered email" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
+                <input aria-label="Registered email" type="email" name="email" placeholder="Registered email" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
                 <button onClick={handleForgotPasswordReq} className="w-full py-4 bg-accent text-white rounded-2xl font-bold hover:shadow-lg transition shadow-accent/30 shadow-md">Send OTP</button>
                 <p className="text-center mt-2 text-sm text-gray-500 cursor-pointer hover:text-accent font-medium" onClick={() => setIsForgotPassword(false)}>Back to Login</p>
               </>
@@ -170,19 +171,19 @@ export default function Header({
                 {!isLogin && (
                   <>
                     <div className="flex gap-3">
-                      <input name="firstName" placeholder="First Name" onChange={handleChange} className="w-1/2 border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
-                      <input name="lastName" placeholder="Last Name" onChange={handleChange} className="w-1/2 border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
+                      <input aria-label="First Name" name="firstName" placeholder="First Name" onChange={handleChange} className="w-1/2 border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
+                      <input aria-label="Last Name" name="lastName" placeholder="Last Name" onChange={handleChange} className="w-1/2 border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
                     </div>
-                    <input name="username" placeholder="Username" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
-                    <input type="email" name="email" placeholder="Email" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
+                    <input aria-label="Username" name="username" placeholder="Username" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
+                    <input aria-label="Email" type="email" name="email" placeholder="Email" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
                   </>
                 )}
-                {isLogin && <input name="loginId" placeholder="Username or Email" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />}
+                {isLogin && <input aria-label="Username or Email" name="loginId" placeholder="Username or Email" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />}
 
                 {!isLogin && form.password && <p className={`text-xs font-bold ${strength.color} mb-[-12px] ml-1`}>Strength: {strength.label}</p>}
-                <input type="password" name="password" placeholder="Password" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
+                <input aria-label="Password" type="password" name="password" placeholder="Password" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />
 
-                {!isLogin && <input type="password" name="confirmPassword" placeholder="Confirm Password" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />}
+                {!isLogin && <input aria-label="Confirm Password" type="password" name="confirmPassword" placeholder="Confirm Password" onChange={handleChange} className="w-full border border-gray-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-accent/20" />}
 
                 {isLogin && (
                   <div className="flex justify-end w-full">
@@ -203,26 +204,26 @@ export default function Header({
         </div>
       </Modal>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-white shadow-lg">
-        <div className="max-w-7xl mx-auto h-[80px] flex items-center justify-between px-4">
+      <header className="public-header fixed top-0 left-0 w-full z-40 bg-white">
+        <div className="max-w-7xl mx-auto h-[80px] flex items-center justify-between px-5 sm:px-8">
           <div onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer">
-            <img src="/logo.png" className="h-[55px]" />
+            <img src="/logo.png" alt="University of Ruhuna crest" className="h-[48px]" />
             <div className="flex flex-col leading-tight">
-              <span className="font-bold text-lg">University of Ruhuna</span>
-              <span className="font-bold text-lg text-gray-800">Job <span className="text-accent">Finder</span></span>
+              <span className="font-medium text-xs text-gray-500">University of Ruhuna</span>
+              <span className="font-bold text-xl text-gray-800">Job <span className="text-accent">Finder</span></span>
             </div>
           </div>
           <nav className="hidden md:flex gap-6 font-popins font-medium">
-            <Link to="/" className="hover:text-accent transition">Home</Link>
-            <Link to="/about" className="hover:text-accent transition">About Us</Link>
-            <Link to="/contact" className="hover:text-accent transition">Contact Us</Link>
-            <Link onClick={() => { resetAuthSteps(); setIsLogin(false); setIsModalOpen(true); }} className="text-green-500 cursor-pointer font-bold">Get Started</Link>
+            <NavLink to="/" end className="public-nav-link">Home</NavLink>
+            <NavLink to="/about" className="public-nav-link">About us</NavLink>
+            <NavLink to="/contact" className="public-nav-link">Contact</NavLink>
+
           </nav>
           <div className="hidden md:flex gap-3">
             <button onClick={() => { resetAuthSteps(); setIsLogin(true); setIsModalOpen(true); }} className="px-6 py-2.5 rounded-full border border-accent text-accent font-bold hover:bg-accent hover:text-white transition">Login</button>
             <button onClick={() => { resetAuthSteps(); setIsLogin(false); setIsModalOpen(true); }} className="px-6 py-2.5 rounded-full bg-accent text-white font-bold hover:shadow-lg transition active:scale-95">Register</button>
           </div>
-          <button onClick={() => setIsDrawerOpen(true)} className="md:hidden flex flex-col gap-1.5 p-2">
+          <button onClick={() => setIsDrawerOpen(true)} aria-label="Open navigation" aria-expanded={isDrawerOpen} className="md:hidden flex flex-col gap-1.5 p-3">
             <span className="h-[2.5px] w-6 bg-gray-800 rounded-full" />
             <span className="h-[2.5px] w-6 bg-gray-800 rounded-full" />
             <span className="h-[2.5px] w-6 bg-gray-800 rounded-full" />
@@ -231,7 +232,7 @@ export default function Header({
       </header>
 
       {isDrawerOpen && <div onClick={() => setIsDrawerOpen(false)} className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30" />}
-      <aside className={`fixed top-0 right-0 h-full w-[280px] bg-white z-40 transition-transform duration-300 shadow-2xl ${isDrawerOpen ? "translate-x-0" : "translate-x-full"}`}>
+      <aside inert={!isDrawerOpen} aria-label="Mobile navigation" className={`fixed top-0 right-0 h-full w-[280px] bg-white z-40 transition-transform duration-300 shadow-2xl ${isDrawerOpen ? "translate-x-0" : "translate-x-full"}`}>
         <div className="h-[80px] flex items-center justify-between px-6 border-b border-gray-50">
           <h2 className="font-bold text-xl">Menu</h2>
           <button onClick={() => setIsDrawerOpen(false)} className="text-2xl text-gray-400">✕</button>

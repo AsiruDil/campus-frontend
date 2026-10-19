@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 import api from "../../api/axios";
 import ReviewDialog from "./ReviewDialog";
 
-const categories = {
+const defaultCategories = {
   lecturer: "Lecturer",
   probationary: "Probationary lecturer",
   demo: "Demonstrator",
@@ -49,10 +49,12 @@ export default function ApplicationReview() {
   });
   const superAdmin = role === "superadmin";
   const [applications, setApplications] = useState([]);
+  const [categories, setCategories] = useState(defaultCategories);
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [query, setQuery] = useState("");
   const [job, setJob] = useState("");
+  const [emailStatus, setEmailStatus] = useState("");
   const [selected, setSelected] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -98,7 +100,13 @@ export default function ApplicationReview() {
           },
           signal: controller.signal,
         });
-        setApplications(response.data);
+        if (!controller.signal.aborted) {
+          setApplications(response.data);
+          setCategories(current => ({
+            ...Object.fromEntries(response.data.filter(a => a.category).map(a => [a.category, a.category])),
+            ...current,
+          }));
+        }
       } catch (failure) {
         if (!controller.signal.aborted) setError(errorMessage(failure));
       } finally {
@@ -131,6 +139,7 @@ export default function ApplicationReview() {
       applications.filter(
         (application) =>
           (!job || application.jobId === job) &&
+          (!emailStatus || (emailStatus === "sent" ? Boolean(application.lastNotifiedAt) : !application.lastNotifiedAt)) &&
           [
             application.firstName,
             application.lastName,
@@ -144,7 +153,7 @@ export default function ApplicationReview() {
               .includes(query.toLowerCase()),
           ),
       ),
-    [applications, query, job],
+    [applications, query, job, emailStatus],
   );
   const visiblePage = Math.min(
     page,
@@ -277,7 +286,21 @@ export default function ApplicationReview() {
   }
 
   return (
-    <div className="text-slate-800 space-y-6 pb-12">
+    <div className={superAdmin ? "" : "review-admin-layout"}>
+      {!superAdmin && <aside className="review-sidebar" aria-label="Application navigation">
+        <p className="admin-eyebrow">APPLICATION WORKSPACE</p>
+        <h2>Applicant overview</h2>
+        <p className="review-sidebar-description">Review applicants and follow up with the right people.</p>
+        <nav aria-label="Application views">
+          {[["", "All applicants"], ["shortlisted", "Shortlisted applicants"], ["selected", "Selected applicants"]].map(([value, label]) => <button key={label} type="button" aria-pressed={status === value} className={status === value ? "active" : ""} disabled={busy} onClick={() => { changeFilter(setStatus, value); setCategory(""); setJob(""); setQuery(""); }}><FiUsers/>{label}</button>)}
+        </nav>
+        <div className="review-sidebar-email"><h3>Email status</h3>
+          {[["", "All email statuses"], ["sent", "Email sent"], ["not-sent", "Email not sent"]].map(([value, label]) => <button key={label} type="button" aria-pressed={emailStatus === value} className={emailStatus === value ? "active" : ""} disabled={busy} onClick={() => changeFilter(setEmailStatus, value)}><FiMail/>{label}</button>)}
+          <p>Combine email status with a shortlist or selected view. Sent means the email provider accepted the message.</p>
+        </div>
+        <button type="button" className="review-reset" disabled={busy} onClick={() => { setStatus(""); setCategory(""); setJob(""); setQuery(""); changeFilter(setEmailStatus, ""); }}>Reset all filters</button>
+      </aside>}
+    <div className="text-slate-800 space-y-6 pb-12 min-w-0">
       <header className="flex flex-wrap gap-4 justify-between items-start">
         <div>
           <p className="text-sm text-blue-600 font-semibold mb-2">
@@ -290,7 +313,7 @@ export default function ApplicationReview() {
           {!superAdmin && profile && (
             <p className="text-sm text-slate-600 mt-2">
               {profile.faculty && profile.department
-                ? `${profile.faculty} / ${profile.department}`
+                ? `${profile.faculty === "*" ? "All faculties" : profile.faculty} / ${profile.department === "*" ? "All departments" : profile.department}`
                 : "Ask a Super Admin to assign your faculty and department before reviewing applications."}
             </p>
           )}
@@ -353,7 +376,10 @@ export default function ApplicationReview() {
             <select
               className={input}
               value={category}
-              onChange={(e) => changeFilter(setCategory, e.target.value)}
+              onChange={(e) => {
+                changeFilter(setCategory, e.target.value);
+                setJob("");
+              }}
             >
               <option value="">All categories</option>
               {Object.entries(categories).map(([value, label]) => (
@@ -536,14 +562,14 @@ export default function ApplicationReview() {
                       >
                         {statuses[application.status]}
                       </span>
-                      {application.lastNotifiedAt && (
+                      {application.lastNotifiedAt ? (
                         <p className="text-xs text-slate-400 mt-2">
                           Emailed{" "}
                           {new Date(
                             application.lastNotifiedAt,
                           ).toLocaleDateString()}
                         </p>
-                      )}
+                      ) : <p className="text-xs text-slate-500 mt-2">Email not sent</p>}
                     </td>
                     <td className="p-4">
                       {application.documentsDeletedAt ? (
@@ -784,6 +810,7 @@ export default function ApplicationReview() {
           )}
         </ReviewDialog>
       )}
+    </div>
     </div>
   );
 }

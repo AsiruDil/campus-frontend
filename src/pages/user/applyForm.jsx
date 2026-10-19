@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import {
@@ -24,7 +24,7 @@ export default function ApplyForm() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { jobId, jobTitle } = state || {};
-  const [profile] = useState(() => {
+  const [profile, setProfile] = useState(() => {
     try {
       return jwtDecode(localStorage.getItem("token"));
     } catch {
@@ -39,6 +39,26 @@ export default function ApplyForm() {
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState('');
+  const missingProfile = ['id', 'birthday', 'gender', 'age'].filter(key => profile[key] === undefined || profile[key] === null || String(profile[key]).trim() === '' || profile[key] === '-');
+  useEffect(() => {
+    let active = true;
+    async function loadProfile() {
+      setProfileLoading(true);
+      try {
+        const { userName } = jwtDecode(localStorage.getItem('token'));
+        const { data } = await api.get(`/api/users/${encodeURIComponent(userName)}`);
+        if (active) { setProfile(data); setProfileError(''); }
+      } catch {
+        if (active) setProfileError('Unable to check your profile. Please try again.');
+      } finally { if (active) setProfileLoading(false); }
+    }
+    loadProfile();
+    window.addEventListener('profile-updated', loadProfile);
+    return () => { active = false; window.removeEventListener('profile-updated', loadProfile); };
+  }, []);
 
   function chooseCV(event) {
     const file = event.target.files[0];
@@ -79,6 +99,7 @@ export default function ApplyForm() {
   }
   async function submit(event) {
     event.preventDefault();
+    if (profileLoading || profileError || missingProfile.length) return setError('Complete your profile before submitting your application.');
     if (!cv) return setError("Please select your CV.");
     if (!/^(\d{9}[VX]|\d{12})$/i.test(nic.trim()))
       return setError("Enter a valid NIC: 9 digits and V/X, or 12 digits.");
@@ -161,6 +182,8 @@ export default function ApplyForm() {
             className="p-6 sm:p-9 space-y-8"
             aria-busy={busy}
           >
+            {(profileLoading || profileError || missingProfile.length > 0) && <section className="rounded-xl border border-amber-200 bg-amber-50 p-5" aria-label="Profile completion" role="status"><h2 className="font-semibold">{profileLoading ? 'Checking your profile...' : 'Complete your profile before applying'}</h2><p className="text-sm mt-2">{profileError || (!profileLoading && `Missing: ${missingProfile.map(key => ({ id: 'NIC', birthday: 'date of birth', gender: 'gender', age: 'age' })[key]).join(', ')}. Save your profile to continue.`)}</p>{!profileLoading && <button type="button" onClick={() => profileError ? window.dispatchEvent(new Event('profile-updated')) : window.dispatchEvent(new Event('open-profile'))} className="mt-3 text-blue-700 font-semibold">{profileError ? 'Retry profile check' : 'Complete profile'}</button>}</section>}
+            <fieldset disabled={profileLoading || Boolean(profileError) || missingProfile.length > 0} className="space-y-8 disabled:opacity-60">
             <section>
               <h2 className="text-xl font-semibold mb-4">1. Your details</h2>
               <p className="bg-slate-50 rounded-xl p-4 mb-5 text-slate-600">
@@ -216,7 +239,7 @@ export default function ApplyForm() {
                     onChange={(e) => setCategory(e.target.value)}
                   >
                     <option value="">Choose the position category</option>
-                    {categories.map(([value, label]) => (
+                    {[...categories, ...(category && !categories.some(([value]) => value === category) ? [[category, category]] : [])].map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>
@@ -292,6 +315,7 @@ export default function ApplyForm() {
             >
               {busy ? "Uploading and submitting…" : "Submit application"}
             </button>
+            </fieldset>
           </form>
         </div>
       </div>

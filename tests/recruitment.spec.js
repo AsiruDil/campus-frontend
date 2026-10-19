@@ -36,10 +36,7 @@ test("applicant submits NIC, CV and supporting files through the existing vacanc
   const failures = [];
   page.on("pageerror", (error) => failures.push(error.message));
   await login(page, "user");
-  await page
-    .getByRole("link", { name: /Details/ })
-    .first()
-    .click();
+  await page.locator('a[href="/home/jobDetails/JOB00001"]').click();
   await page.getByRole("button", { name: /Apply/ }).first().click();
   await page.getByLabel(/NIC number/).fill("200012345678");
   await page.getByLabel(/Mobile number/).fill("+94771234567");
@@ -129,8 +126,7 @@ test("Super Admin updates deadline and deletes only expired document packages", 
   await page
     .getByRole("row")
     .filter({ hasText: "Lecturer in Computing" })
-    .getByRole("button")
-    .last()
+    .getByRole("button", { name: "Edit Lecturer in Computing", exact: true })
     .click();
   await page
     .getByLabel("Application deadline (your local time)")

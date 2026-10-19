@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Edit2, Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import VacancyModal from '../../components/admin/VacancyMOdal';
 import api from '../../api/axios';
@@ -6,13 +6,14 @@ import { toast } from 'react-hot-toast';
 
 const ManageVacancies = () => {
   const [allVacancies, setAllVacancies] = useState([]);
-  const [filteredVacancies, setFilteredVacancies] = useState([]);
-  const [displayVacancies, setDisplayVacancies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4;
+  const itemsPerPage = 8;
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [error, setError] = useState('');
+  const [pendingJob, setPendingJob] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVacancy, setEditingVacancy] = useState(null);
   const [isViewMode, setIsViewMode] = useState(false);
@@ -22,6 +23,7 @@ const ManageVacancies = () => {
     if (showLoading) setLoading(true);
     try {
       // ✅ Fixed: Used relative path since baseURL is in api.js
+      setError('');
       const response = await api.get('/api/jobs');
       let vacancies = Array.isArray(response.data) ? response.data : [];
 
@@ -29,6 +31,7 @@ const ManageVacancies = () => {
       setAllVacancies(vacancies);
     } catch (error) {
       console.error("Fetch Error:", error.response?.data || error.message);
+      setError("Unable to load vacancies. Please try again.");
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -36,19 +39,15 @@ const ManageVacancies = () => {
 
   useEffect(() => { fetchAllVacancies(true); }, []);
 
-  // --- Search & Filter Logic ---
-  useEffect(() => {
-    const results = allVacancies.filter(v => {
-      const matchesSearch = [v.jobRole, v.faculty, v.department, v.jobType].some(val => val?.toLowerCase().includes(searchTerm.toLowerCase()));
-      return matchesSearch && (filterType === 'All' || v.jobType === filterType);
-    });
-    setFilteredVacancies(results);
-    setCurrentPage(1);
-  }, [searchTerm, filterType, allVacancies]);
-
-  useEffect(() => {
-    setDisplayVacancies(filteredVacancies.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage));
-  }, [currentPage, filteredVacancies]);
+  const vacancyStatus = v => !v.isAvailable ? 'hidden' : v.deadline && new Date(v.deadline) <= new Date() ? 'expired' : 'open';
+  const filteredVacancies = useMemo(() => allVacancies.filter(v => {
+    const matchesSearch = [v.jobRole, v.faculty, v.department, v.jobType, v.jobId].some(value => value?.toLowerCase().includes(searchTerm.trim().toLowerCase()));
+    const status = !v.isAvailable ? 'hidden' : v.deadline && new Date(v.deadline) <= new Date() ? 'expired' : 'open';
+    return matchesSearch && (filterType === 'All' || v.jobType === filterType) && (statusFilter === 'all' || status === statusFilter);
+  }), [allVacancies, searchTerm, filterType, statusFilter]);
+  const pageCount = Math.max(1, Math.ceil(filteredVacancies.length / itemsPerPage));
+  const page = Math.min(currentPage, pageCount);
+  const displayVacancies = filteredVacancies.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   // --- 2. Create or Update Logic ---
   const handleCreateOrUpdate = async (formData) => {
@@ -75,6 +74,7 @@ const ManageVacancies = () => {
   const toggleStatus = async (e, jobId, currentStatus) => {
     e.stopPropagation();
     const newStatus = !currentStatus;
+    setPendingJob(jobId);
 
     // Optimistic UI update
     setAllVacancies(prev => prev.map(j => j.jobId === jobId ? { ...j, isAvailable: newStatus } : j));
@@ -84,66 +84,37 @@ const ManageVacancies = () => {
       await api.patch(`/api/jobs/${jobId}`, { isAvailable: newStatus });
     } catch (error) {
       console.error("Toggle Error:", error.response?.data || error.message);
-      fetchAllVacancies(false); // Revert on failure
-    }
+      toast.error("Could not update visibility. Please try again.");
+      await fetchAllVacancies(false);
+    } finally { setPendingJob(null); }
   };
 
   return (
-    <div className="flex flex-col h-full font-sans pb-10">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">Manage Job Vacancies</h1>
-        <button onClick={() => { setEditingVacancy(null); setIsViewMode(false); setIsModalOpen(true); }} className="w-full md:w-auto bg-blue-600 text-white px-5 py-2.5 rounded-lg flex items-center justify-center gap-2"><Plus size={20} /> Add Job</button>
+    <div className="admin-workspace">
+      <header className="admin-page-heading"><div><span className="admin-eyebrow">RECRUITMENT</span><h1>Manage Job Vacancies</h1><p>Publish opportunities, keep deadlines up to date, and control visibility.</p></div><div className="admin-row-actions"><button className="admin-action" onClick={() => fetchAllVacancies(true)} disabled={loading}>Refresh</button><button className="admin-action primary" onClick={() => { setEditingVacancy(null); setIsViewMode(false); setIsModalOpen(true); }}><Plus size={18}/> Add Job</button></div></header>
+      <div className="admin-stats">
+        <div><span>Total vacancies</span><strong>{allVacancies.length}</strong><small>Across all faculties</small></div>
+        <div><span>Open for applications</span><strong>{allVacancies.filter(v => vacancyStatus(v) === 'open').length}</strong><small>Visible with an open deadline</small></div>
+        <div><span>Hidden vacancies</span><strong>{allVacancies.filter(v => vacancyStatus(v) === 'hidden').length}</strong><small>Not visible to applicants</small></div>
+        <div><span>Deadline passed</span><strong>{allVacancies.filter(v => vacancyStatus(v) === 'expired').length}</strong><small>Review deadlines to reopen</small></div>
       </div>
-
-      <div className="bg-white p-4 rounded-xl shadow-sm border mb-6 flex flex-col md:flex-row justify-between gap-4">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-11 pr-4 py-2.5 bg-gray-50 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-        <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto">
-          {['All', 'Full-time', 'Part-time', 'Temporary'].map((type) => (
-            <button key={type} onClick={() => setFilterType(type)} className={`px-4 py-1.5 text-sm font-medium rounded-md whitespace-nowrap ${filterType === type ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>{type}</button>
-          ))}
-        </div>
-      </div>
-
-      {loading && <p role="status" className="text-slate-500 py-4">Loading vacancies…</p>}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[900px]">
-            <thead className="bg-white border-b sticky top-0">
-              <tr>
-                <th className="p-5 text-sm font-bold text-gray-700">Job Role</th>
-                <th className="p-5 text-sm font-bold text-gray-700">Faculty / Dept</th>
-                <th className="p-5 text-sm font-bold text-gray-700">Job Type</th>
-                <th className="p-5 text-sm font-bold text-gray-700">Deadline</th>
-                <th className="p-5 text-sm font-bold text-gray-700 text-center">Status</th>
-                <th className="p-5 text-sm font-bold text-gray-700 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {displayVacancies.map((v) => (
-                <tr key={v._id} onClick={() => { setEditingVacancy(v); setIsViewMode(true); setIsModalOpen(true); }} className="hover:bg-gray-50 cursor-pointer">
-                  <td className="p-5"><div>{v.jobRole}</div><div className="text-xs text-gray-400">#{v.jobId}</div></td>
-                  <td className="p-5"><div className="text-sm font-medium">{v.faculty}</div><div className="text-xs text-gray-500">{v.department}</div></td>
-                  <td className="p-5"><span className={`px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700`}>{v.jobType}</span></td>
-                  <td className="p-5 text-sm">{v.deadline ? new Date(v.deadline).toLocaleString() : 'N/A'}</td>
-                  <td className="p-5 text-center"><button onClick={(e) => toggleStatus(e, v.jobId, v.isAvailable)} className={`px-3 py-1 rounded-full text-xs font-medium border w-20 ${v.isAvailable ? 'bg-green-50 text-green-700' : 'bg-gray-50'}`}>{v.isAvailable ? 'Active' : 'Hidden'}</button></td>
-                  <td className="p-5 text-center"><button onClick={(e) => { e.stopPropagation(); setEditingVacancy(v); setIsViewMode(false); setIsModalOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600"><Edit2 size={18} /></button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="p-5 border-t flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
-          <span className="text-sm text-gray-500">Showing {displayVacancies.length} of {filteredVacancies.length} jobs</span>
-          <div className="flex gap-2">
-            <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-2 border rounded-lg disabled:opacity-50"><ChevronLeft size={16} /></button>
-            <button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage >= Math.ceil(filteredVacancies.length / itemsPerPage)} className="p-2 border rounded-lg disabled:opacity-50"><ChevronRight size={16} /></button>
-          </div>
-        </div>
-      </div>
-      <VacancyModal key={`${editingVacancy?._id || "new"}-${isModalOpen}`} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleCreateOrUpdate} editingVacancy={editingVacancy} isViewMode={isViewMode} />
+      <section className="admin-panel" aria-label="Vacancy directory">
+        <div className="admin-panel-heading"><div><h2>All vacancies</h2><p>Select a job title to preview the full vacancy.</p></div><span className="admin-count">{filteredVacancies.length} results</span></div>
+        <div className="admin-toolbar"><label className="admin-search"><Search size={20}/><input aria-label="Search vacancies" placeholder="Search job title, faculty, department, or ID" value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}/></label><label className="admin-select">Vacancy status<select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}><option value="all">All statuses</option><option value="open">Open</option><option value="hidden">Hidden</option><option value="expired">Deadline passed</option></select></label></div>
+        <div className="admin-filter-row"><div className="admin-tabs" aria-label="Filter by job type">{[...new Set(['All', 'Full-time', 'Part-time', 'Temporary', ...allVacancies.map(v => v.jobType).filter(Boolean)])].map(type => <button key={type} aria-pressed={filterType === type} className={filterType === type ? 'selected' : ''} onClick={() => { setFilterType(type); setCurrentPage(1); }}>{type === 'All' ? 'All job types' : type}</button>)}</div>{(searchTerm || filterType !== 'All' || statusFilter !== 'all') && <button className="admin-reset" onClick={() => { setSearchTerm(''); setFilterType('All'); setStatusFilter('all'); setCurrentPage(1); }}>Clear filters</button>}</div>
+        {error ? <div className="admin-empty" role="alert"><h3>{error}</h3><button className="admin-action" onClick={() => fetchAllVacancies(true)}>Try again</button></div> : loading ? <div className="admin-empty" role="status">Loading vacancies...</div> : <div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>Job opportunity</th><th>Faculty / Department</th><th>Job type</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+          {displayVacancies.map(v => <tr key={v._id || v.jobId}>
+            <td><button className="admin-name" onClick={() => { setEditingVacancy(v); setIsViewMode(true); setIsModalOpen(true); }}>{v.jobRole}</button><small>{v.jobId}</small></td>
+            <td><span className="admin-cell-title">{v.faculty || 'Not specified'}</span><small>{v.department || 'Not specified'}</small></td>
+            <td><span className="admin-badge blue">{v.jobType || 'Not specified'}</span></td>
+            <td>{v.deadline ? new Date(v.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No deadline'}<small>{v.deadline ? new Date(v.deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</small></td>
+            <td><span className={`admin-badge ${vacancyStatus(v) === 'open' ? 'positive' : vacancyStatus(v) === 'expired' ? 'warning' : 'muted'}`}><span className="admin-status-dot"/>{vacancyStatus(v) === 'open' ? 'Open' : vacancyStatus(v) === 'expired' ? 'Deadline passed' : 'Hidden'}</span></td>
+            <td><div className="admin-row-actions"><button aria-label={`Edit ${v.jobRole}`} className="admin-action" onClick={() => { setEditingVacancy(v); setIsViewMode(false); setIsModalOpen(true); }}><Edit2 size={15}/> Edit</button><button className="admin-action" aria-label={`${v.isAvailable ? 'Hide' : 'Show'} ${v.jobRole}`} disabled={pendingJob === v.jobId} onClick={e => toggleStatus(e, v.jobId, v.isAvailable)}>{pendingJob === v.jobId ? 'Updating...' : v.isAvailable ? 'Hide' : 'Show'}</button></div></td>
+          </tr>)}
+        </tbody></table>{!displayVacancies.length && <div className="admin-empty"><Search size={28}/><h3>{allVacancies.length ? 'No matching vacancies' : 'Your next hire starts here'}</h3><p>{allVacancies.length ? 'Try a different search or clear your filters.' : 'Add a job to start accepting applications.'}</p>{!allVacancies.length && <button className="admin-action primary" onClick={() => { setEditingVacancy(null); setIsViewMode(false); setIsModalOpen(true); }}><Plus size={17}/> Add Job</button>}</div>}</div>}
+        <div className="admin-pagination vacancy-pagination"><span>{filteredVacancies.length ? `Showing ${(page - 1) * itemsPerPage + 1} to ${Math.min(page * itemsPerPage, filteredVacancies.length)} of ${filteredVacancies.length} vacancies` : 'No vacancies to show'}</span><div className="admin-row-actions"><button aria-label="Previous page" className="admin-action" onClick={() => setCurrentPage(page - 1)} disabled={page === 1}><ChevronLeft size={17}/></button><span>Page {page} of {pageCount}</span><button aria-label="Next page" className="admin-action" onClick={() => setCurrentPage(page + 1)} disabled={page === pageCount}><ChevronRight size={17}/></button></div></div>
+      </section>
+      <VacancyModal key={`${editingVacancy?._id || "new"}-${isModalOpen}`} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleCreateOrUpdate} editingVacancy={editingVacancy} isViewMode={isViewMode} vacancies={allVacancies} />
     </div>
   );
 };

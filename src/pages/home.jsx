@@ -18,8 +18,8 @@ export default function HomePage(){
     }
 
     return(
-        <div className="w-full h-screen flex flex-col">
-            <div className="w-full h-[80px]">
+        <div className="public-site w-full min-h-screen flex flex-col">
+            <div className="w-full h-[80px] shrink-0">
             <Header
              isModalOpen={isModalOpen}
              setIsModalOpen={setIsModalOpen}
@@ -27,7 +27,7 @@ export default function HomePage(){
             setIsLogin={setIsLogin}
             />
             </div>
-            <div className="w-full h-[calc(maxh-80px)] ">
+            <div className="w-full flex-1 ">
                 <Routes >
                     <Route path="/" element={<Home openRegisterModal={openRegisterModal}/>}/>
                     <Route path="/about" element={<About/>}/>

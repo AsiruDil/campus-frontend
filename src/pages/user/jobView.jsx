@@ -286,14 +286,14 @@ export default function JobView() {
 
               <FilterSection
                 title="Job Type"
-                options={['Full-time', 'Part-time', 'Temporary']}
+                options={[...new Set(['Full-time', 'Part-time', 'Temporary', ...allJobs.map(job => job.jobType).filter(Boolean)])]}
                 selectedOptions={selectedTypes}
                 onChange={handleTypeToggle}
               />
 
               <FilterSection
                 title="Faculty"
-                options={['Science', 'Art', 'Management', 'Engineering','Medicine','Technology','Agriculture','Fisheries and Marine Science']}
+                options={[...new Set(['Science', 'Art', 'Management', 'Engineering', 'Medicine', 'Technology', 'Agriculture', 'Fisheries and Marine Science', ...allJobs.map(job => job.faculty).filter(Boolean)])]}
                 selectedOptions={selectedFaculties}
                 onChange={handleFacultyToggle}
               />
