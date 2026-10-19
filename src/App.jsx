@@ -1,4 +1,3 @@
-import './App.css'
 import { roleHome } from './util/roles'
 import { BrowserRouter, Route, Routes, useSearchParams, useNavigate, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
@@ -34,8 +33,9 @@ function AuthHandler() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const token = searchParams.get("token")
-    const type = searchParams.get("type")
+    const authHash = new URLSearchParams(window.location.hash.slice(1))
+    const token = authHash.get("token") || searchParams.get("token")
+    const type = authHash.get("type") || searchParams.get("type")
     const error = searchParams.get("error")
 
     if (error === "blocked") {
@@ -47,6 +47,7 @@ function AuthHandler() {
       localStorage.setItem("userType", type || "user")
 
       toast.success("Logged in with Google!")
+      window.history.replaceState(null, "", window.location.pathname)
       setSearchParams({})
 
       navigate(roleHome(type))

@@ -1,185 +1,70 @@
-import { useEffect, useState } from "react";
-import { BiSolidShoppingBags, BiWorld, BiTimeFive } from "react-icons/bi";
-import { FaSearch, FaBuilding, FaUserCheck } from "react-icons/fa";
-import { FaArrowRightLong } from "react-icons/fa6";
-import JobCardGetStared from "./jobCardGetStared";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from 'react';
+import { ArrowUpRight, ArrowRight, Search, MapPin, BriefcaseBusiness, GraduationCap, ShieldCheck, FileCheck2, MailCheck, Check, CalendarDays } from 'lucide-react';
+import api from '../api/axios';
 
-export default function Home({openRegisterModal}) {
-  const [show, setShow] = useState(false);
+const steps = [
+  { icon: <MailCheck size={25} />, title: 'Make it official', text: 'Create your account and verify your email to get started.' },
+  { icon: <Search size={25} />, title: 'Find your fit', text: 'Explore vacancies by role, faculty, and department.' },
+  { icon: <FileCheck2 size={25} />, title: 'Put yourself forward', text: 'Prepare your CV and supporting documents, then apply online.' },
+];
 
-  // Mock Data
-  const jobs = [
-    { id: 1, type: "Full Time", name: "Frontend Developer", image: "https://picsum.photos/id/10/200/300" },
-    { id: 2, type: "Part Time", name: "Backend Developer", image: "https://picsum.photos/id/11/200/300" },
-    { id: 3, type: "Remote", name: "UI/UX Designer", image: "https://picsum.photos/id/12/200/300" },
-    { id: 4, type: "Internship", name: "Software Intern", image: "https://picsum.photos/id/13/200/300" },
-    { id: 5, type: "Contract", name: "Mobile Developer", image: "https://picsum.photos/id/14/200/300" },
-    { id: 6, type: "Full Time", name: "DevOps Engineer", image: "https://picsum.photos/id/15/200/300" }
-  ];
-
+export default function Home({ openRegisterModal }) {
+  const [jobs, setJobs] = useState([]);
+  const [status, setStatus] = useState('loading');
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setShow(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
+    const controller = new AbortController();
+    api.get('/api/jobs', { signal: controller.signal }).then(({ data }) => {
+      setJobs(Array.isArray(data) ? data : []);
+      setStatus('ready');
+    }).catch(() => { if (!controller.signal.aborted) setStatus('error'); });
+    return () => controller.abort();
+  }, [retry]);
+  const available = jobs.filter(job => job.isAvailable !== false && (!job.deadline || new Date(job.deadline) > new Date()));
+  const latestJobs = available
+    .sort((a, b) => {
+      const dateDifference = (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0);
+      return dateDifference || String(b.jobId || '').localeCompare(String(a.jobId || ''), undefined, { numeric: true });
+    })
+    .slice(0, 5);
+  const dateLabel = value => value ? new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'See vacancy details';
   return (
-    <div className="w-full bg-gray-50 overflow-x-hidden font-popins">
-
-      {/* ================= HERO SECTION ================= */}
-      <div className="relative w-full min-h-[780px] flex items-center bg-white">
-
-        {/* Background Decorative Blob (Optional visual flair) */}
-        <div className="absolute top-0 right-0 w-[50%] h-full bg-gradient-to-l from-blue-50 to-white hidden md:block z-0 clip-path-slant" />
-
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 md:px-12 flex flex-col md:flex-row items-center gap-12">
-
-          {/* TEXT CONTENT */}
-          <div className="  w-full mb-10 md:w-1/2 pt-10 md:pt-0 mt-35 text-center md:text-left ">
-
-            {/* Badge
-            <div className={`
-                inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-accent text-sm font-semibold mb-6
-                transition-all duration-1000 ease-out
-                ${show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}
-            `}>
-
-
-            </div> */}
-
-            <h1 className={`
-                text-4xl md:text-6xl font-extrabold text-gray-900 leading-[1.2] mb-6
-                transition-all duration-[1500ms] ease-out
-                ${show ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[-50px]"}
-            `}>
-              Secure Your <span className="text-accent">Career Path.</span> <br />
-              You're Worth It.
-            </h1>
-
-            <p className={`
-                text-gray-500 text-lg mb-8 max-w-lg mx-auto md:mx-0
-                transition-all duration-[1500ms] ease-out delay-200
-                ${show ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[-50px]"}
-            `}>
-              Discover thousands of remote and on-site opportunities.
-              Join a community of ambitious professionals today.
-            </p>
-              <button onClick={openRegisterModal} className={`bg-accent text-white px-10 py-4  rounded-full font-bold  shadow-xl shadow-accent/20 hover:scale-105 transition-transform
-                   transition-all duration-[1500ms] ease-out delay-50 cursor-pointer
-                ${show ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[-70px]"}
-                `}>
-              Get Started
-            </button>
-
-
-
-          </div>
-
-          {/* IMAGE CONTENT */}
-          <div className="w-full md:w-1/2 flex justify-center relative">
-            <div className="relative w-full max-w-[500px]">
-              {/* Decorative Circle Background */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[450px] md:h-[450px] bg-accent/10 rounded-full blur-3xl -z-10" />
-
-              <img
-                className="w-full h-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-700"
-                src="/jobfinders.png"
-                alt="Job Seeker"
-              />
-
-              {/* Floating Cards (Decorative) */}
-              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-xl border border-gray-100 hidden md:flex items-center gap-3 animate-bounce duration-[3000ms]">
-                <div className="bg-green-100 p-2 rounded-full text-green-600">
-                  <FaUserCheck />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Success</p>
-                  <p className="font-bold text-sm text-gray-800">Job Secured!</p>
-                </div>
-              </div>
+    <div className="career-page">
+      <section className="career-hero">
+        <div className="career-container hero-grid">
+          <div className="hero-copy">
+            <span className="career-eyebrow"><span className="status-dot" /> YOUR NEXT CHAPTER STARTS HERE</span>
+            <h1>Great minds.<br />New beginnings.<br /><span>Your next role.</span></h1>
+            <p>Bring your curiosity. Share your knowledge. Find your place at the University of Ruhuna.</p>
+            <div className="hero-actions">
+              <a className="career-button primary" href="#opportunities">Explore opportunities <ArrowUpRight size={19} /></a>
+              <a className="career-text-link" href="#how-it-works">How to apply <ArrowRight size={17} /></a>
             </div>
+            <div className="hero-reassurance"><ShieldCheck size={18} /><span>One account. A simpler way to apply.</span></div>
           </div>
-
+          <div className="hero-art">
+            <div className="hero-image-panel"><img src="/jobfinders.png" alt="Professionals ready for their next career opportunity" /></div>
+            <div className="hero-note note-top"><span className="note-icon"><GraduationCap size={23} /></span><div><strong>A place to grow</strong><span>Teaching. Research. Impact.</span></div></div>
+            <div className="hero-note note-bottom"><span className="note-check"><Check size={19} /></span><div><strong>Your future looks bright.</strong><span>Take the first step today.</span></div><ArrowUpRight size={19} /></div>
+            <span className="art-spark spark-one" aria-hidden="true">+</span><span className="art-spark spark-two" aria-hidden="true">+</span>
+          </div>
         </div>
-      </div>
-
-
-
-
-
-      {/* ================= JOB LISTING SECTION ================= */}
-      <div className="max-w-7xl mx-auto py-20 px-6">
-
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-           <div className="max-w-2xl">
-              <span className="text-accent font-bold uppercase tracking-wider text-sm">Discover Jobs</span>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">
-                Explore the Latest <br/> Career Opportunities
-              </h2>
-              <p className="text-gray-500 mt-4">
-                Hand-picked jobs from the best companies. Find the role that fits your life.
-              </p>
-           </div>
-
-           <button onClick={openRegisterModal} className="hidden md:flex items-center gap-2 text-accent font-semibold hover:text-accent/80 transition">
-              See all categories <FaArrowRightLong />
-           </button>
+      </section>
+      <div className="career-container"><div className="career-values"><div><GraduationCap /><span>University of Ruhuna<strong>A community of possibility</strong></span></div><div><BriefcaseBusiness /><span>Meaningful opportunities<strong>Find work with purpose</strong></span></div><div><ShieldCheck /><span>Apply with confidence<strong>A clear, guided process</strong></span></div></div></div>
+      <section id="opportunities" className="career-container opportunities-section">
+        <div className="section-heading"><div><span className="career-eyebrow">FIND YOUR PLACE</span><h2>Good things are ahead.</h2><p>Explore our latest five open roles and find the opportunity that feels like you.</p></div><span className="vacancy-count">{status === 'ready' ? `${latestJobs.length} latest ${latestJobs.length === 1 ? 'opportunity' : 'opportunities'}` : 'University careers'}<span className="status-dot" /></span></div>
+        <div className="vacancy-grid" aria-live="polite" aria-busy={status === 'loading'}>
+          {status === 'loading' ? <div className="vacancy-empty">Loading opportunities…</div> : status === 'error' ? <div className="vacancy-empty"><BriefcaseBusiness size={28} /><h3>We couldn’t load opportunities.</h3><p>Please try again in a moment.</p><button className="career-button secondary" onClick={() => { setStatus('loading'); setRetry(value => value + 1); }}>Try again</button></div> : latestJobs.length === 0 ? <div className="vacancy-empty"><Search size={28} /><h3>Your next opportunity is on its way.</h3><p>Check back for new university vacancies.</p></div> : latestJobs.map(job => <article className="career-job" key={job.jobId || job._id}>
+            <div className="job-top"><span className="job-emblem"><GraduationCap size={24} /></span><span className="job-type">{job.jobType || 'University vacancy'}</span></div>
+            <p className="job-faculty">{job.faculty || 'University of Ruhuna'}</p><h3>{job.jobRole}</h3><p className="job-department">{job.department || 'University of Ruhuna'}</p>
+            <div className="job-meta"><span><MapPin size={15} />{job.location || 'University of Ruhuna'}</span><span><CalendarDays size={15} />Closes {dateLabel(job.deadline)}</span></div>
+            <div className="job-bottom"><button onClick={openRegisterModal} aria-label={`Create an account to view ${job.jobRole}`}>View opportunity <ArrowUpRight size={18} /></button></div>
+          </article>)}
         </div>
-
-        {/* Filter Tabs (Visual Only) */}
-        <div className="flex justify-center items-center mb-2">
-          <button className="px-6 py-2 bg-accent text-white rounded-full shadow-lg shadow-accent/30 transition-transform hover:-translate-y-1 flex items-center gap-2 "><BiSolidShoppingBags/>Resent Jobs</button>
-
-
-        </div>
-
-        {/* Cards Grid */}
-        <Link onClick={
-          openRegisterModal
-        }>
-        <div className="flex items-center justify-center">
-        <div className=" grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {jobs.map((job) => (
-            <div
-              key={job.id}
-              className="group transform transition-all duration-300 hover:-translate-y-2"
-            >
-              {/* Wrapping the card to add extra hover effects via 'group' if needed */}
-              <JobCardGetStared job={job} />
-            </div>
-          ))}
-        </div>
-        </div>
-        </Link>
-
-        {/* Mobile View More Button */}
-        <div className="mt-12 flex justify-center ">
-           <button onClick={openRegisterModal} className="w-full py-4 border lg:w-[40%] border-gray-300 rounded-xl text-gray-600 font-semibold hover:bg-gray-50 cursor-pointer ">
-             Browse All Jobs
-           </button>
-        </div>
-
-      </div>
-
-      {/* ================= CTA BOTTOM ================= */}
-      <div className="w-full bg-blue-50 py-20 px-6">
-         <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              Ready to take the next step?
-            </h2>
-            <p className="text-gray-600 mb-8">
-              Join millions of users who trust us to manage their career path.
-            </p>
-            <button onClick={openRegisterModal} className="bg-accent text-white px-10 py-4 rounded-full font-bold text-lg shadow-xl shadow-accent/20 hover:scale-105 transition-transform cursor-pointer">
-              Join Now
-            </button>
-         </div>
-      </div>
-
+        <p className="vacancy-hint"><ShieldCheck size={15} /> Create an account to view full details and submit your application.</p>
+      </section>
+      <section id="how-it-works" className="career-process"><div className="career-container"><div className="section-heading"><div><span className="career-eyebrow">A LITTLE PREPARATION. A BIG NEXT STEP.</span><h2>Your next move, made simple.</h2></div><p>From your first look to your application,<br className="desktop-break" /> we’ll help you get there.</p></div><div className="process-grid">{steps.map(({ icon, title, text }, index) => <article key={title}><div className="process-top"><span className="process-icon">{icon}</span><span className="step-number">0{index + 1}</span></div><h3>{title}</h3><p>{text}</p></article>)}</div></div></section>
+      <section className="career-container"><div className="career-cta"><div><span className="career-eyebrow">MAKE ROOM FOR WHAT’S NEXT</span><h2>A new chapter.<br />A world of possibility.</h2><p>Your experience could make a difference here.</p></div><button className="career-button primary" onClick={openRegisterModal}>Create your account <ArrowUpRight size={20} /></button><GraduationCap className="cta-watermark" aria-hidden="true" /></div></section>
     </div>
   );
 }
-// }
-
-

@@ -1,8 +1,10 @@
+import { uploadProfilePhoto } from "../../util/uploadProfilePhoto";
+import { profileImageUrl, useDefaultProfileImage } from "../../util/profileImage";
+import ProfileModal from "../ProfileModal";
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiUsers, FiBriefcase, FiX, FiCamera, FiSave, FiLogOut } from 'react-icons/fi';
 import Modal from 'react-modal';
-import { supabase } from "../../util/supabase"
 
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
@@ -34,7 +36,7 @@ const Sidebar = ({ isMobileOpen, setMobileOpen }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [, setIsSaving] = useState(false);
   const [userData, setUserData] = useState({ name: "", email: "", idNumber: "", age: "-", sex: "-", birthday: "" });
 
   const token = localStorage.getItem('token');
@@ -51,7 +53,7 @@ const Sidebar = ({ isMobileOpen, setMobileOpen }) => {
         if (response.data) {
           const user = response.data;
           setUserData({ name: user.userName || '', email: user.email || '', idNumber: user.id || '', age: user.age || '-', sex: user.gender || '-', birthday: user.birthday || '' });
-          if (user.img) setProfileImage(user.img);
+          if (user.img) setProfileImage(profileImageUrl(user.img));
         }
       } catch (error) {
         console.error("Error fetching profile data:", error);
@@ -97,21 +99,9 @@ const Sidebar = ({ isMobileOpen, setMobileOpen }) => {
     const toastId = toast.loading("Saving changes...");
     try {
       let finalImageUrl = profileImage;
-      if (selectedFile) {
-        if (profileImage && profileImage.includes("supabase")) {
-          const oldFileName = profileImage.split("/profiles/")[1]?.split("?")[0];
-          if (oldFileName) await supabase.storage.from("im").remove([`profiles/${oldFileName}`]);
-        }
-        const fileExt = selectedFile.name.split(".").pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `profiles/${fileName}`;
-        const { error: uploadError } = await supabase.storage.from("im").upload(filePath, selectedFile);
-        if (uploadError) throw uploadError;
-        const { data } = supabase.storage.from("im").getPublicUrl(filePath);
-        finalImageUrl = `${data.publicUrl}?t=${Date.now()}`;
-      }
+      if (selectedFile) finalImageUrl = await uploadProfilePhoto(selectedFile);
 
-      const updateUser = { id: userData.idNumber, age: userData.age !== '-' ? userData.age : null, gender: userData.sex !== '-' ? userData.sex : null, birthday: userData.birthday || null, img: finalImageUrl };
+      const updateUser = { id: userData.idNumber, age: userData.age !== '-' ? userData.age : null, gender: userData.sex !== '-' ? userData.sex : null, birthday: userData.birthday || null, img: finalImageUrl.includes("/api/users/avatar/") ? new URL(finalImageUrl, window.location.origin).pathname : finalImageUrl };
 
       await api.put(`/api/users/${userData.name}`, updateUser);
 
@@ -129,8 +119,8 @@ const Sidebar = ({ isMobileOpen, setMobileOpen }) => {
   return (
     <>
       <div className={`w-64 lg:mt-0 sm:mt-15 bg-white h-screen fixed left-0 top-0 border-r border-gray-100 flex flex-col z-40 transition-transform duration-300 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-        <div onClick={() => setIsModalOpen(true)} className="p-6 flex items-center gap-4 mb-6 hover:bg-gray-50 transition-all cursor-pointer">
-          <img src={previewImage || profileImage} className="w-12 h-12 rounded-full object-cover border-2 border-gray-200" alt="Admin" onError={(e) => { e.target.src = "https://ui-avatars.com/api/?name=Admin"; }} />
+        <div role="button" tabIndex={0} aria-label="Open profile" onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setIsModalOpen(true); } }} onClick={() => setIsModalOpen(true)} className="p-6 flex items-center gap-4 mb-6 hover:bg-gray-50 transition-all cursor-pointer">
+          <img src={previewImage || profileImage} className="w-12 h-12 rounded-full object-cover border-2 border-gray-200" alt="Admin" onError={useDefaultProfileImage} />
           <div className="overflow-hidden">
             <h3 className="font-bold text-textDark truncate">{userData.name || "Super Admin"}</h3>
             <p className="text-[10px] text-textGray truncate">{userData.email || "admin@gmail.com"}</p>
@@ -161,49 +151,7 @@ const Sidebar = ({ isMobileOpen, setMobileOpen }) => {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onRequestClose={() => setIsModalOpen(false)} className="md:max-w-2xl lg:w-[30%] w-[90%] mx-auto mt-20 bg-white rounded-2xl shadow-2xl outline-none overflow-hidden relative z-[70]" overlayClassName="fixed inset-0 bg-black/60 flex justify-center items-start z-[60]">
-        <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 z-20 text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition"><FiX size={24} /></button>
-        <div className="relative">
-          <div className="h-16 bg-blue-50"></div>
-          <div className="px-6 pb-6">
-            <div className="relative -mt-12 mb-4 flex justify-center items-center">
-              <div className="relative">
-                <img src={previewImage || profileImage} className="w-[80px] h-[80px] rounded-full object-cover border-4 border-white shadow-md" alt="Profile" />
-                <button onClick={() => fileInputRef.current.click()} className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full shadow-lg border-2 border-white transform hover:scale-110"><FiCamera size={14} /></button>
-                <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
-              </div>
-            </div>
-            <h2 className="text-2xl text-center font-bold text-gray-800 mb-1">{userData.name}</h2>
-            <p className="text-gray-500 text-center text-sm mb-6">{userData.email}</p>
-            <div className="space-y-4">
-              <div className="flex flex-col items-center">
-                <label className="text-sm font-medium text-gray-700 mb-1">ID Number</label>
-                <input type="text" value={userData.idNumber} onChange={handleIdChange} className="w-full max-w-[260px] text-center px-2 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div className="flex justify-center gap-4">
-                <div className="w-[180px] text-center bg-gray-50 p-3 rounded-lg border">
-                  <span className="block text-xs font-semibold text-gray-500">BIRTHDAY</span>
-                  <input type="date" value={userData.birthday} onChange={(e) => setUserData({ ...userData, birthday: e.target.value })} className="w-full bg-transparent text-center font-medium" />
-                </div>
-              </div>
-              <div className="flex justify-center gap-4">
-                <div className="w-[100px] text-center bg-gray-50 p-3 rounded-lg border">
-                  <span className="block text-xs font-semibold text-gray-500">AGE</span>
-                  <span className="text-lg font-medium">{userData.age}</span>
-                </div>
-                <div className="w-[100px] text-center bg-gray-50 p-3 rounded-lg border">
-                  <span className="block text-xs font-semibold text-gray-500">GENDER</span>
-                  <span className="text-lg font-medium">{userData.sex}</span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-8 flex flex-col items-center gap-3 pt-4 border-t">
-              <button onClick={handleSave} disabled={isSaving} className="w-full max-w-[250px] flex items-center justify-center gap-2 bg-blue-500 text-white py-2.5 rounded-lg font-medium disabled:opacity-70"><FiSave /> {isSaving ? 'Saving...' : 'Save Changes'}</button>
-              <button onClick={handleLogout} className="w-full max-w-[250px] flex items-center justify-center gap-2 bg-red-50 text-red-500 border border-red-200 py-2.5 rounded-lg font-medium"><FiLogOut /> Logout</button>
-            </div>
-          </div>
-        </div>
-      </Modal>
+      <ProfileModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} userData={userData} setUserData={setUserData} image={previewImage || profileImage} onImageChange={handleImageUpload} fileInputRef={fileInputRef} onIdChange={handleIdChange} onSave={handleSave} onLogout={handleLogout} role="Super Admin"/>
     </>
   );
 };

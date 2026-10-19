@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, MapPin, Building2, Calendar, DollarSign, Briefcase, GraduationCap, FileText } from 'lucide-react';
 
-const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = false }) => {
+const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = false, vacancies = [] }) => {
   const initialData = {
     jobRole: '',
     category: '',
@@ -130,53 +130,26 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
 
               <InputGroup label="Job Role" name="jobRole" value={formData.jobRole} onChange={handleChange} required />
 
-              <div><label htmlFor="vacancy-category" className="block text-sm font-semibold text-gray-700 mb-1.5">Position category</label><select id="vacancy-category" name="category" value={formData.category} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg p-2.5"><option value="">Choose category</option><option value="lecturer">Lecturer</option><option value="probationary">Probationary lecturer</option><option value="demo">Demonstrator</option></select></div>
-              {/* LOCATION DROPDOWN */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Location</label>
-                <select
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
-                >
-                    <option value="Main Campus">Main Campus</option>
-                    <option value="Kaburupitiya">Kaburupitiya</option>
-                    <option value="Hapugala">Hapugala</option>
-                    <option value="Karapitiya">Karapitiya</option>
-                </select>
-              </div>
+              <CustomOptionSelect label="Position category" name="category" value={formData.category} onChange={handleChange} options={[
+                ['lecturer', 'Lecturer'], ['probationary', 'Probationary lecturer'], ['demo', 'Demonstrator'],
+                ...vacancies.filter(v => v.category).map(v => [v.category, v.category]),
+              ]} />
+              <CustomOptionSelect label="Location" name="location" value={formData.location} onChange={handleChange} options={[
+                ...['Main Campus', 'Kaburupitiya', 'Hapugala', 'Karapitiya'].map(value => [value, value]),
+                ...vacancies.filter(v => v.location).map(v => [v.location, v.location]),
+              ]} />
 
-              {/* FACULTY DROPDOWN */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Faculty</label>
-                <select
-                    name="faculty"
-                    value={formData.faculty}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
-                >
-                    <option value="Science">Science</option>
-                    <option value="Management">Management</option>
-                    <option value="Art">Art</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Medicine">Medicine</option>
-                    <option value="Agriculture">Agriculture</option>
-                    <option value="Technology">Technology</option>
-                    <option value="Fisheries and Marine Science">Fisheries and Marine Science</option>
-                </select>
-              </div>
+              <CustomOptionSelect label="Faculty" name="faculty" value={formData.faculty} onChange={handleChange} options={[
+                ...['Science', 'Management', 'Art', 'Engineering', 'Medicine', 'Agriculture', 'Technology', 'Fisheries and Marine Science'].map(value => [value, value]),
+                ...vacancies.filter(v => v.faculty).map(v => [v.faculty, v.faculty]),
+              ]} />
 
               <InputGroup label="Department" name="department" value={formData.department} onChange={handleChange} required />
 
-             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Job Type</label>
-              <select name="jobType" value={formData.jobType} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
-                <option value="Full-time">Full-time</option>
-                <option value="Part-time">Part-time</option>
-                <option value="Temporary">Temporary</option>
-              </select>
-            </div>
+              <CustomOptionSelect label="Job Type" name="jobType" value={formData.jobType} onChange={handleChange} options={[
+                ...['Full-time', 'Part-time', 'Temporary'].map(value => [value, value]),
+                ...vacancies.filter(v => v.jobType).map(v => [v.jobType, v.jobType]),
+              ]} />
 
             {/* SALARY INPUT */}
             <div>
@@ -221,6 +194,42 @@ const VacancyModal = ({ isOpen, onClose, onSubmit, editingVacancy, isViewMode = 
     </div>
   );
 };
+
+// Choices added here become reusable when the vacancy is saved.
+function CustomOptionSelect({ label, name, value, onChange, options }) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [added, setAdded] = useState([]);
+  const choices = [...options, ...added, ...(value ? [[value, value]] : [])]
+    .filter(([key], index, all) => all.findIndex(([other]) => other.toLowerCase() === key.toLowerCase()) === index);
+  function add() {
+    const text = draft.trim();
+    if (!text) return;
+    const existing = choices.find(([key, title]) => [key.toLowerCase(), title.toLowerCase()].includes(text.toLowerCase()));
+    const next = existing ? existing[0] : text;
+    if (!existing) setAdded(current => [...current, [text, text]]);
+    onChange({ target: { name, value: next } });
+    setAdding(false);
+    setDraft('');
+  }
+  return <div>
+    <label htmlFor={`vacancy-${name}`} className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+    <select id={`vacancy-${name}`} name={name} value={value} required onChange={event => {
+      if (event.target.value === '__add_new__') { setAdding(true); return; }
+      onChange(event);
+    }} className="w-full border border-gray-300 rounded-lg p-2.5 bg-white">
+      <option value="">Choose {label.toLowerCase()}</option>
+      {choices.map(([key, title]) => <option key={key} value={key}>{title}</option>)}
+      <option value="__add_new__">+ Add new {label.toLowerCase()}</option>
+    </select>
+    {adding && <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3 space-y-2">
+      <label htmlFor={`new-${name}`} className="block text-sm font-medium">New {label.toLowerCase()}</label>
+      <input id={`new-${name}`} autoFocus maxLength={150} value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); add(); } }} className="w-full border border-gray-300 rounded-lg p-2 text-sm bg-white"/>
+      <div className="flex gap-3"><button type="button" disabled={!draft.trim()} onClick={add} className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm disabled:opacity-50">Add option</button><button type="button" onClick={() => { setAdding(false); setDraft(''); }} className="text-sm px-2">Cancel</button></div>
+      <p className="text-xs text-slate-500">Save the job to make this option available for future vacancies.</p>
+    </div>}
+  </div>;
+}
 
 // --- Helper Components ---
 const Section = ({ title, icon, content }) => (

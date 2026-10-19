@@ -28,7 +28,7 @@ export default function UserEditModal({ isOpen, onClose, user, onSave }) {
   const departments = [
     ...new Set(
       jobs
-        .filter((job) => job.faculty === faculty)
+        .filter((job) => faculty === "*" || job.faculty === faculty)
         .map((job) => job.department),
     ),
   ].filter(Boolean);
@@ -71,17 +71,25 @@ export default function UserEditModal({ isOpen, onClose, user, onSave }) {
         {role === "admin" && (
           <>
             <p className="text-sm text-slate-500">
-              Admins review applications only within their assigned faculty and
-              department. Use the same names as the job vacancies.
+              Choose a specific faculty and department, or enable all to give
+              this admin a wider application review scope.
             </p>
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={faculty === "*"} onChange={e => {
+                setFaculty(e.target.checked ? "*" : "");
+                setDepartment("");
+              }}/> Assign all faculties
+            </label>
             <label className="block">
               <span className="block font-semibold mb-2">Assigned faculty</span>
               <input
                 className="w-full border border-slate-200 rounded-xl p-3"
                 list="role-faculties"
+                disabled={faculty === "*"}
+                placeholder={faculty === "*" ? "All faculties" : "Select or enter a faculty"}
                 required
                 maxLength={150}
-                value={faculty}
+                value={faculty === "*" ? "All faculties" : faculty}
                 onChange={(e) => {
                   setFaculty(e.target.value);
                   setDepartment("");
@@ -93,6 +101,9 @@ export default function UserEditModal({ isOpen, onClose, user, onSave }) {
                 ))}
               </datalist>
             </label>
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={department === "*"} onChange={e => setDepartment(e.target.checked ? "*" : "")}/> Assign all departments
+            </label>
             <label className="block">
               <span className="block font-semibold mb-2">
                 Assigned department
@@ -100,9 +111,11 @@ export default function UserEditModal({ isOpen, onClose, user, onSave }) {
               <input
                 className="w-full border border-slate-200 rounded-xl p-3"
                 list="role-departments"
+                disabled={department === "*"}
+                placeholder={department === "*" ? "All departments" : "Select or enter a department"}
                 required
                 maxLength={150}
-                value={department}
+                value={department === "*" ? "All departments" : department}
                 onChange={(e) => setDepartment(e.target.value)}
               />
               <datalist id="role-departments">
@@ -113,6 +126,7 @@ export default function UserEditModal({ isOpen, onClose, user, onSave }) {
             </label>
           </>
         )}
+        {role === "admin" && faculty && department && <p className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800" role="status">Application access: {faculty === "*" ? "All faculties" : faculty} / {department === "*" ? "All departments" : department}.</p>}
         <div className="flex justify-end gap-3">
           <button
             type="button"

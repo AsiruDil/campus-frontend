@@ -6,12 +6,12 @@ const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange, showi
   
   // Logic to generate the array of page numbers
   const pageNumbers = [];
-  for (let i = 1; i <= totalPages; i++) {
+  for (let i = Math.max(1, Math.min(currentPage - 2, totalPages - 4)); i <= Math.min(totalPages, Math.max(5, currentPage + 2)); i++) {
     pageNumbers.push(i);
   }
 
   return (
-    <div className="flex items-center justify-between text-textGray text-sm">
+    <div className="flex flex-wrap gap-4 items-center justify-between text-slate-500 text-sm">
       {/* Dynamic text based on current filtered results */}
       <div>
         {totalItems > 0 ? (
@@ -30,6 +30,7 @@ const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange, showi
         <div className="flex items-center gap-2">
           {/* Previous Page Button */}
           <button
+            aria-label="Previous page"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
             className="p-2 border rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed bg-white transition-colors"
@@ -42,6 +43,8 @@ const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange, showi
             {pageNumbers.map((number) => (
               <button
                 key={number}
+                aria-label={`Page ${number}`}
+                aria-current={currentPage === number ? "page" : undefined}
                 onClick={() => onPageChange(number)}
                 className={`w-8 h-8 flex items-center justify-center rounded-md font-bold transition-all ${
                   currentPage === number
@@ -56,6 +59,7 @@ const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange, showi
 
           {/* Next Page Button */}
           <button
+            aria-label="Next page"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
             className="p-2 border rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed bg-white transition-colors"
